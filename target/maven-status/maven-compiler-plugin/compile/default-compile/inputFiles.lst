@@ -1,0 +1,10 @@
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/MobiAdApplication.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/controller/UssdController.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/model/Menu.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/model/MenuItem.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/model/UserSessionLog.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/repository/MenuItemRepository.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/repository/MenuRepository.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/repository/UserSessionLogRepository.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/service/UssdService.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/util/DataLoader.java

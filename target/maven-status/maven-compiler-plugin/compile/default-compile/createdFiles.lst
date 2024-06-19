@@ -1,0 +1,10 @@
+com/fredy/mobiAd/model/UserSessionLog.class
+com/fredy/mobiAd/service/UssdService.class
+com/fredy/mobiAd/MobiAdApplication.class
+com/fredy/mobiAd/repository/MenuRepository.class
+com/fredy/mobiAd/model/Menu.class
+com/fredy/mobiAd/repository/MenuItemRepository.class
+com/fredy/mobiAd/repository/UserSessionLogRepository.class
+com/fredy/mobiAd/util/DataLoader.class
+com/fredy/mobiAd/model/MenuItem.class
+com/fredy/mobiAd/controller/UssdController.class

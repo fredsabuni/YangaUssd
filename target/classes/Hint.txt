@@ -1,0 +1,45 @@
+Deployment::
+
+Step 1: Build Application
+-> mvn clean package
+
+Step 2: Transfer the JAR file to the Ubuntu server:
+-> scp target/mobiAd-0.0.1-SNAPSHOT.jar root@5.180.149.168:/opt/YangaUSSD/
+
+Step 3: Configure Systemd Service
+-> sudo nano /etc/systemd/system/mobiAd.service
+
+Step 4: Edit service file
+===============================
+[Unit]
+Description=Yanga USSD Solution
+After=network.target
+
+[Service]
+User=yanga-ussd
+Group=yanga-ussd
+ExecStart=/usr/bin/java -jar /opt/YangaUSSD/mobiAd-0.0.1-SNAPSHOT.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+===============================
+
+Step 5: Reload Systemd
+-> sudo systemctl daemon-reload
+
+Step 6:Enable the service to start on boot
+-> sudo systemctl enable mobiAd
+
+Step 7: Start the service
+-> sudo systemctl start mobiAd
+
+Step 8: Check Status
+-> sudo systemctl status mobiAd
+
+MONITORING
+
+Monitor Logs
+-> sudo journalctl -u mobiAd -f
