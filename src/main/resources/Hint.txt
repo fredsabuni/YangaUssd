@@ -43,3 +43,8 @@ MONITORING
 
 Monitor Logs
 -> sudo journalctl -u mobiAd -f
+
+
+TODO::
+-> Get ID of Item menu selected when length is 1*2*2*2 = 4 from MenuItem
+-> Implement the same for bundle then call payment API

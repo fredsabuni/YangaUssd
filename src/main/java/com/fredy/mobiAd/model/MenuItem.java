@@ -20,6 +20,36 @@ public class MenuItem {
 
     private Long amount;
 
+    private Long playerId;
+
+    private String dynamicType;
+
+    private Long referenceId;
+
+    public String getDynamicType() {
+        return dynamicType;
+    }
+
+    public void setDynamicType(String dynamicType) {
+        this.dynamicType = dynamicType;
+    }
+
+    public Long getReferenceId() {
+        return referenceId;
+    }
+
+    public void setReferenceId(Long referenceId) {
+        this.referenceId = referenceId;
+    }
+
+    public Long getPlayerId() {
+        return playerId;
+    }
+
+    public void setPlayerId(Long playerId) {
+        this.playerId = playerId;
+    }
+
     public Long getAmount() {
         return amount;
     }
@@ -36,6 +66,14 @@ public class MenuItem {
         this.menu = menu;
         this.text = text;
         this.nextMenuId = nextMenuId;
+    }
+
+    public MenuItem(String text, Long playerId, Long nextMenuId, Menu menu, String dynamicType){
+        this.text = text;
+        this.playerId = playerId;
+        this.nextMenuId = nextMenuId;
+        this.menu = menu;
+        this.dynamicType = dynamicType;
     }
 
     public Long getNextMenuId() {
