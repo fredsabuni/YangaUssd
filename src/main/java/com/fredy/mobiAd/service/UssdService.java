@@ -92,7 +92,9 @@ public class UssdService {
         String combinedInputs = String.join("*", inputs);
         Long menuId = 1L; // Start with the main menu
 
-        if (FETCH_PLAYERS_INPUT.equals(combinedInputs) || FETCH_PLAYERS_INPUT_1.equals(combinedInputs)) {
+        if (inputs.length == 2 && inputs[0].equals("2")) {
+            return handleNews(phoneNumber, inputs);
+        }else if (FETCH_PLAYERS_INPUT.equals(combinedInputs) || FETCH_PLAYERS_INPUT_1.equals(combinedInputs)) {
             fetchAndCachePlayers();
             return generateDynamicMenuResponse(DYNAMIC_MENU_ID, "PLAYER");
         }else if (FETCH_GOALS_INPUT.equals(combinedInputs) || FETCH_GOALS_INPUT_1.equals(combinedInputs)) {
@@ -215,7 +217,7 @@ public class UssdService {
         }
 
         Long amount = currentItem.getAmount();
-        Long menuItemId = currentItem.getId(); // Get the menu item ID
+//        Long menuItemId = currentItem.getId(); // Get the menu item ID
 
         // Log the details for debugging
         log.info("Processing vote for playerId: {}, amount: {}, phoneNumber: {}", playerId, amount, phoneNumber);
@@ -245,5 +247,30 @@ public class UssdService {
         } else {
             return "END Failed to record your vote. " + paymentResponseDTO.getMessage();
         }
+    }
+
+    private String handleNews(String phoneNumber, String[] inputs) {
+        int selectedBundleUnit = Integer.parseInt(inputs[inputs.length - 1]);
+
+        // Determine the current menu ID based on inputs (for vote unit)
+        Long menuId = determineCurrentMenuId(inputs);
+
+        // Retrieve current menu items for bundle unit
+        List<MenuItem> currentMenuItems = menuItemRepository.findByMenu_Id(menuId);
+        MenuItem currentItem = currentMenuItems.stream()
+                .filter(item -> item.getText().startsWith(String.valueOf(selectedBundleUnit)))
+                .findFirst()
+                .orElse(null);
+
+        if (currentItem == null) {
+            return "END Invalid selection. Please try again.";
+        }
+
+        Long amount = currentItem.getAmount();
+
+        // Log the details for debugging
+        log.info("Processing bundle of amount: {}, phoneNumber: {}", amount, phoneNumber);
+
+        return "END News service is currently not available. Please try again later.";
     }
 }
