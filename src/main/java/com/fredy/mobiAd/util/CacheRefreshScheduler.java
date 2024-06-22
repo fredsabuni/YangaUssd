@@ -10,7 +10,7 @@ public class CacheRefreshScheduler {
     @Autowired
     private ExternalApiService externalApiService;
 
-    @Scheduled(fixedRate = 1800000) // 30 minutes in milliseconds
+    @Scheduled(fixedRate = 12 * 60 * 60 * 1000) // 12 hours in milliseconds
     public void refreshCache() {
         externalApiService.fetchAndCachePlayers();
         externalApiService.fetchAndCacheGoals();

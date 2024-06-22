@@ -1,9 +1,6 @@
 package com.fredy.mobiAd.service;
 
-import com.fredy.mobiAd.dto.PaymentRequestDTO;
-import com.fredy.mobiAd.dto.PaymentResponseDTO;
-import com.fredy.mobiAd.dto.PlayerDTO;
-import com.fredy.mobiAd.dto.PlayerResponseDTO;
+import com.fredy.mobiAd.dto.*;
 import com.fredy.mobiAd.model.Player;
 import com.fredy.mobiAd.repository.PlayerRepository;
 import org.slf4j.Logger;
@@ -32,6 +29,9 @@ public class ExternalApiService {
 
     @Value("${vote.base.url}")
     private String voteBaseUrl;
+
+    @Value("${news.base.url}")
+    private String newsBaseUrl;
 
     @Transactional
     @Cacheable("players")
@@ -66,9 +66,13 @@ public class ExternalApiService {
     }
 
     public PaymentResponseDTO vote(PaymentRequestDTO paymentRequestDTO) {
-        // Example URL, replace with actual API endpoint
         String url = voteBaseUrl + "/api/v1/contest/vote";
         return restTemplate.postForObject(url, paymentRequestDTO, PaymentResponseDTO.class);
+    }
+
+    public SubscriptionResponseDTO news(SubscriptionRequestDTO subscriptionRequestDTO){
+        String url = newsBaseUrl + "/api/v1/subscriptions/subscribe";
+        return restTemplate.postForObject(url, subscriptionRequestDTO, SubscriptionResponseDTO.class);
     }
 
     public List<Player> getPlayersFromCache(String type) {

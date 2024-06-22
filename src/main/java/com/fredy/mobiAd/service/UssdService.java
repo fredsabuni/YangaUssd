@@ -2,6 +2,8 @@ package com.fredy.mobiAd.service;
 
 import com.fredy.mobiAd.dto.PaymentRequestDTO;
 import com.fredy.mobiAd.dto.PaymentResponseDTO;
+import com.fredy.mobiAd.dto.SubscriptionRequestDTO;
+import com.fredy.mobiAd.dto.SubscriptionResponseDTO;
 import com.fredy.mobiAd.model.Menu;
 import com.fredy.mobiAd.model.MenuItem;
 import com.fredy.mobiAd.model.Player;
@@ -11,6 +13,7 @@ import com.fredy.mobiAd.repository.MenuItemRepository;
 import com.fredy.mobiAd.repository.MenuRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -228,6 +231,7 @@ public class UssdService {
 
     @Transactional
     private String processVote(String phoneNumber, Long playerId, Long amount) {
+        try {
         // Create and send the payment request
         PaymentRequestDTO paymentRequestDTO = new PaymentRequestDTO();
         paymentRequestDTO.setContestantId(playerId);
@@ -243,34 +247,54 @@ public class UssdService {
         log.info("Received payment response: {}", paymentResponseDTO);
 
         if (paymentResponseDTO.isSuccess()) {
-            return "END Your vote has been successfully recorded.";
+            return "END Complete the transaction to vote!";
         } else {
-            return "END Failed to record your vote. " + paymentResponseDTO.getMessage();
+//            return "END Failed to record your vote. " + paymentResponseDTO.getMessage();
+            return "END Failed to record your vote. ";
+            }
+        }   catch (Exception e) {
+                log.error("Error handling vote", e);
+                return "END Voting failed.";
         }
     }
 
     private String handleNews(String phoneNumber, String[] inputs) {
-        int selectedBundleUnit = Integer.parseInt(inputs[inputs.length - 1]);
+        try {
+            int selectedBundleUnit = Integer.parseInt(inputs[inputs.length - 1]);
 
-        // Determine the current menu ID based on inputs (for vote unit)
-        Long menuId = determineCurrentMenuId(inputs);
+            // Determine the current menu ID based on inputs (for vote unit)
+            Long menuId = determineCurrentMenuId(inputs);
 
-        // Retrieve current menu items for bundle unit
-        List<MenuItem> currentMenuItems = menuItemRepository.findByMenu_Id(menuId);
-        MenuItem currentItem = currentMenuItems.stream()
-                .filter(item -> item.getText().startsWith(String.valueOf(selectedBundleUnit)))
-                .findFirst()
-                .orElse(null);
+            // Retrieve current menu items for bundle unit
+            List<MenuItem> currentMenuItems = menuItemRepository.findByMenu_Id(menuId);
+            MenuItem currentItem = currentMenuItems.stream()
+                    .filter(item -> item.getText().startsWith(String.valueOf(selectedBundleUnit)))
+                    .findFirst()
+                    .orElse(null);
 
-        if (currentItem == null) {
-            return "END Invalid selection. Please try again.";
+            if (currentItem == null) {
+                return "END Invalid selection. Please try again.";
+            }
+            Long amount = currentItem.getAmount();
+            // Log the details for debugging
+            log.info("Processing bundle of amount: {}, phoneNumber: {}", amount, phoneNumber);
+
+            // Create the subscription request DTO
+            SubscriptionRequestDTO requestDTO = new SubscriptionRequestDTO();
+            requestDTO.setPhoneNumber(phoneNumber.replace("+", "")); // Clean phone number
+            requestDTO.setAmount(amount);
+
+            SubscriptionResponseDTO subscriptionResponseDTO = externalApiService.news(requestDTO);
+
+            if (subscriptionResponseDTO.isSuccess()) {
+                return "END Complete transaction to subscribe!";
+            } else {
+                return "END Subscription failed. ";
+            }
+
+        } catch (Exception e) {
+            log.error("Error handling news subscription", e);
+            return "END Subscription failed: " + e.getMessage();
         }
-
-        Long amount = currentItem.getAmount();
-
-        // Log the details for debugging
-        log.info("Processing bundle of amount: {}, phoneNumber: {}", amount, phoneNumber);
-
-        return "END News service is currently not available. Please try again later.";
     }
 }
