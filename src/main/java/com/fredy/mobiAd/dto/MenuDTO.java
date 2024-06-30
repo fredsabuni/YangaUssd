@@ -4,13 +4,15 @@ import java.util.List;
 
 public class MenuDTO {
     private Long id;
-    private String text;
+    private String textEn;
+    private String textSw;
     private Long parentId;
     private List <MenuItemDTO> menuItems;
 
-    public MenuDTO(Long id, String text, Long parentId, List<MenuItemDTO> menuItems) {
+    public MenuDTO(Long id, String textEn, String textSw, Long parentId, List<MenuItemDTO> menuItems) {
         this.id = id;
-        this.text = text;
+        this.textEn = textEn;
+        this.textSw = textSw;
         this.parentId = parentId;
         this.menuItems = menuItems;
     }
@@ -32,12 +34,20 @@ public class MenuDTO {
         this.id = id;
     }
 
-    public String getText() {
-        return text;
+    public String getTextEn() {
+        return textEn;
     }
 
-    public void setText(String text) {
-        this.text = text;
+    public void setTextEn(String textEn) {
+        this.textEn = textEn;
+    }
+
+    public String getTextSw() {
+        return textSw;
+    }
+
+    public void setTextSw(String textSw) {
+        this.textSw = textSw;
     }
 
     public Long getParentId() {

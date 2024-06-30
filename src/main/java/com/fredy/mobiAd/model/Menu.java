@@ -10,7 +10,8 @@ public class Menu {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String text;
+    private String textEn;
+    private String textSw;
 
     @Column(nullable = true)
     private Long parentId;
@@ -26,12 +27,20 @@ public class Menu {
         this.id = id;
     }
 
-    public String getText() {
-        return text;
+    public String getTextEn() {
+        return textEn;
     }
 
-    public void setText(String text) {
-        this.text = text;
+    public void setTextEn(String textEn) {
+        this.textEn = textEn;
+    }
+
+    public String getTextSw() {
+        return textSw;
+    }
+
+    public void setTextSw(String textSw) {
+        this.textSw = textSw;
     }
 
     public Long getParentId() {
@@ -53,8 +62,9 @@ public class Menu {
     // Default constructor
     public Menu() {}
 
-    public Menu(String text, Long parentId) {
-        this.text = text;
+    public Menu(String textEn, String textSw, Long parentId) {
+        this.textEn = textEn;
+        this.textSw = textSw;
         this.parentId = parentId;
     }
 }

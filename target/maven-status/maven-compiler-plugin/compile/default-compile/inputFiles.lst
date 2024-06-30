@@ -7,6 +7,8 @@
 /Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/dto/PaymentResponseDTO.java
 /Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/dto/PlayerDTO.java
 /Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/dto/PlayerResponseDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/dto/SubscriptionRequestDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/dto/SubscriptionResponseDTO.java
 /Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/model/Menu.java
 /Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/model/MenuItem.java
 /Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/model/Player.java

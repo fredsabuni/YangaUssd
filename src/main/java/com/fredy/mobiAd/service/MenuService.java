@@ -21,14 +21,16 @@ public class MenuService {
 
     public Menu createMenu(MenuDTO menuDTO) {
         Menu menu = new Menu();
-        menu.setText(menuDTO.getText());
+        menu.setTextEn(menuDTO.getTextEn());
+        menu.setTextSw(menuDTO.getTextSw());
         menu.setParentId(menuDTO.getParentId());
         return menuRepository.save(menu);
     }
 
     public Menu updateMenu(Long id, MenuDTO menuDTO) {
         Menu menu = menuRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid menu ID: " + id));
-        menu.setText(menuDTO.getText());
+        menu.setTextEn(menuDTO.getTextEn());
+        menu.setTextSw(menuDTO.getTextSw());
         menu.setParentId(menuDTO.getParentId());
         return menuRepository.save(menu);
     }
@@ -43,10 +45,10 @@ public class MenuService {
 
     private MenuDTO convertToDTO(Menu menu) {
         List<MenuItemDTO> menuItemDTOS = menu.getMenuItems().stream()
-                .map(menuItem -> new MenuItemDTO(menuItem.getId(), menuItem.getText(), menuItem.getAmount(), menuItem.getNextMenuId(), menu.getId()))
+                .map(menuItem -> new MenuItemDTO(menuItem.getId(), menuItem.getTextEn(), menuItem.getTextSw(), menuItem.getAmount(), menuItem.getNextMenuId(), menu.getId()))
                 .collect(Collectors.toList());
 
-        return new MenuDTO(menu.getId(), menu.getText(), menu.getParentId(), menuItemDTOS);
+        return new MenuDTO(menu.getId(), menu.getTextEn(), menu.getTextSw(), menu.getParentId(), menuItemDTOS);
     }
 
     public Optional<Menu> getMenuById(Long id) {

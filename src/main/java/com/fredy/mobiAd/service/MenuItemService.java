@@ -20,7 +20,8 @@ public class MenuItemService {
 
     public MenuItem createMenuItem(MenuItemDTO menuItemDTO) {
         MenuItem menuItem = new MenuItem();
-        menuItem.setText(menuItemDTO.getText());
+        menuItem.setTextEn(menuItemDTO.getTextEn());
+        menuItem.setTextSw(menuItemDTO.getTextSw());
         menuItem.setAmount(menuItemDTO.getAmount());
         menuItem.setNextMenuId(menuItemDTO.getNextMenuId());
         menuItem.setMenu(menuRepository.findById(menuItemDTO.getMenuId())
@@ -31,7 +32,8 @@ public class MenuItemService {
     public MenuItem updateMenuItem(Long id, MenuItemDTO menuItemDTO) {
         MenuItem menuItem = menuItemRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid menu item ID: " + id));
-        menuItem.setText(menuItemDTO.getText());
+        menuItem.setTextEn(menuItemDTO.getTextEn());
+        menuItem.setTextSw(menuItemDTO.getTextSw());
         menuItem.setAmount(menuItemDTO.getAmount());
         menuItem.setNextMenuId(menuItemDTO.getNextMenuId());
         menuItem.setMenu(menuRepository.findById(menuItemDTO.getMenuId())
@@ -52,6 +54,6 @@ public class MenuItemService {
     }
 
     public MenuItemDTO convertToDTO(MenuItem menuItem) {
-        return new MenuItemDTO(menuItem.getId(), menuItem.getText(), menuItem.getAmount(), menuItem.getNextMenuId(), menuItem.getMenuId());
+        return new MenuItemDTO(menuItem.getId(), menuItem.getTextEn(), menuItem.getTextSw(), menuItem.getAmount(), menuItem.getNextMenuId(), menuItem.getMenuId());
     }
 }

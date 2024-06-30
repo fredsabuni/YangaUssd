@@ -6,6 +6,7 @@ com/fredy/mobiAd/repository/UserSessionLogRepository.class
 com/fredy/mobiAd/model/UserSessionLog.class
 com/fredy/mobiAd/MobiAdApplication.class
 com/fredy/mobiAd/util/CacheRefreshScheduler.class
+com/fredy/mobiAd/dto/SubscriptionResponseDTO.class
 com/fredy/mobiAd/dto/MenuItemDTO.class
 com/fredy/mobiAd/model/Player.class
 com/fredy/mobiAd/dto/PlayerResponseDTO$Payload.class
@@ -15,6 +16,7 @@ com/fredy/mobiAd/repository/MenuRepository.class
 com/fredy/mobiAd/dto/PlayerResponseDTO.class
 com/fredy/mobiAd/dto/PaymentRequestDTO.class
 com/fredy/mobiAd/service/MenuItemService.class
+com/fredy/mobiAd/dto/SubscriptionRequestDTO.class
 com/fredy/mobiAd/dto/PlayerDTO.class
 com/fredy/mobiAd/repository/PlayerRepository.class
 com/fredy/mobiAd/repository/MenuItemRepository.class

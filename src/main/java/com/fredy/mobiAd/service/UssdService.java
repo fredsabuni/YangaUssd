@@ -1,9 +1,6 @@
 package com.fredy.mobiAd.service;
 
-import com.fredy.mobiAd.dto.PaymentRequestDTO;
-import com.fredy.mobiAd.dto.PaymentResponseDTO;
-import com.fredy.mobiAd.dto.SubscriptionRequestDTO;
-import com.fredy.mobiAd.dto.SubscriptionResponseDTO;
+import com.fredy.mobiAd.dto.*;
 import com.fredy.mobiAd.model.Menu;
 import com.fredy.mobiAd.model.MenuItem;
 import com.fredy.mobiAd.model.Player;
@@ -11,18 +8,23 @@ import com.fredy.mobiAd.model.UserSessionLog;
 import com.fredy.mobiAd.repository.UserSessionLogRepository;
 import com.fredy.mobiAd.repository.MenuItemRepository;
 import com.fredy.mobiAd.repository.MenuRepository;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -30,14 +32,18 @@ import java.util.stream.IntStream;
 @Service
 public class UssdService {
     private static final Logger log = LoggerFactory.getLogger(UssdService.class);
+    private static final Long LANGUAGE_SELECTION_MENU_ID = 1L;
     private static final Long DYNAMIC_MENU_ID = 4L;
     private static final Long NEXT_MENU_ID = 5L;
     private static final String FETCH_PLAYERS_INPUT = "1*1*1";
     private static final String FETCH_PLAYERS_INPUT_1 = "1*2*1";
     private static final String FETCH_GOALS_INPUT = "1*1*2";
     private static final String FETCH_GOALS_INPUT_1 = "1*2*2";
+    private static final String DEFAULT_LANGUAGE = "en";
+    private static final String LANGUAGE_EN = "en";
+    private static final String LANGUAGE_SW = "sw";
 
-    private Map<String, List<MenuItem>> cache = new ConcurrentHashMap<>();
+    private Map<String, String> sessionLanguages = new ConcurrentHashMap<>();
 
     @Autowired
     private MenuRepository menuRepository;
@@ -54,7 +60,7 @@ public class UssdService {
     public String handleUssdRequest(String sessionId, String phoneNumber, String text) {
         String response;
         if (text == null || text.isEmpty()) {
-            response =  generateMenuResponse(1L);
+            response = generateMenuResponse(LANGUAGE_SELECTION_MENU_ID, LANGUAGE_EN); // Default to English for the language selection menu
         } else {
             String[] inputs = text.split("\\*");
             response =  navigateMenus(sessionId, phoneNumber,inputs);
@@ -64,52 +70,76 @@ public class UssdService {
         return response;
     }
 
-    private String generateMenuResponse(Long menuId) {
+    private String generateMenuResponse(Long menuId, String language) {
         Menu menu = menuRepository.findById(menuId).orElseThrow(() -> new IllegalArgumentException("Invalid menu ID: " + menuId));
         List<MenuItem> menuItems = menuItemRepository.findByMenu_Id(menuId);
 
-        StringBuilder response = new StringBuilder("CON ").append(menu.getText()).append("\n");
+        StringBuilder response = new StringBuilder("CON ").append(getMenuText(menu, language)).append("\n");
         for (MenuItem item : menuItems) {
-            response.append(item.getText()).append("\n");
+            response.append(getMenuItemText(item, language)).append("\n");
         }
 
         return response.toString();
     }
 
-    private String generateDynamicMenuResponse(Long menuId, String dynamicType) {
+
+    private String generateDynamicMenuResponse(Long menuId, String dynamicType, String language) {
         Menu menu = menuRepository.findById(menuId).orElseThrow(() -> new IllegalArgumentException("Invalid menu ID: " + menuId));
         List<MenuItem> menuItems = menuItemRepository.findByMenu_Id(menuId)
                 .stream()
                 .filter(item -> dynamicType.equals(item.getDynamicType()))
                 .toList();
 
-        StringBuilder response = new StringBuilder("CON ").append(menu.getText()).append("\n");
+        StringBuilder response = new StringBuilder("CON ").append(getMenuText(menu, language)).append("\n");
         for (MenuItem item : menuItems) {
-            response.append(item.getText()).append("\n");
+            response.append(getMenuItemText(item, language)).append("\n");
         }
 
         return response.toString();
     }
 
+    private void setLanguageForSession(String sessionId, String languageSelection) {
+        String language = LANGUAGE_EN;
+        if (languageSelection.equals("2")) {
+            language = LANGUAGE_SW;
+        }
+        sessionLanguages.put(sessionId, language);
+    }
+
+    private String getMenuText(Menu menu, String language) {
+        return LANGUAGE_SW.equals(language) ? menu.getTextSw() : menu.getTextEn();
+    }
+
+    private String getMenuItemText(MenuItem menuItem, String language) {
+        return LANGUAGE_SW.equals(language) ? menuItem.getTextSw() : menuItem.getTextEn();
+    }
+
     private String navigateMenus(String sessionId, String phoneNumber, String[] inputs) {
+        if (inputs.length == 1 && (inputs[0].equals("1") || inputs[0].equals("2"))) {
+            setLanguageForSession(sessionId, inputs[0]);
+            Long nextMenuId = getNextMenuId(LANGUAGE_SELECTION_MENU_ID, inputs[0]);
+            return generateMenuResponse(nextMenuId, sessionLanguages.get(sessionId));
+        }
+
         String combinedInputs = String.join("*", inputs);
         Long menuId = 1L; // Start with the main menu
+        String language = sessionLanguages.getOrDefault(sessionId, DEFAULT_LANGUAGE);
 
         if (inputs.length == 2 && inputs[0].equals("2")) {
             return handleNews(phoneNumber, inputs);
         }else if (FETCH_PLAYERS_INPUT.equals(combinedInputs) || FETCH_PLAYERS_INPUT_1.equals(combinedInputs)) {
             fetchAndCachePlayers();
-            return generateDynamicMenuResponse(DYNAMIC_MENU_ID, "PLAYER");
+            return generateDynamicMenuResponse(DYNAMIC_MENU_ID, "PLAYER", language);
         }else if (FETCH_GOALS_INPUT.equals(combinedInputs) || FETCH_GOALS_INPUT_1.equals(combinedInputs)) {
             fetchAndCacheGoals();
-            return generateDynamicMenuResponse(DYNAMIC_MENU_ID, "GOAL");
+            return generateDynamicMenuResponse(DYNAMIC_MENU_ID, "GOAL", language);
         }else if (inputs.length == 5) {
             return processVote(sessionId, phoneNumber, inputs);
         } else {
             for (String input : inputs) {
                 List<MenuItem> menuItems = menuItemRepository.findByMenu_Id(menuId);
                 MenuItem menuItem = menuItems.stream()
-                        .filter(item -> item.getText().startsWith(input))
+                        .filter(item -> item.getTextEn().startsWith(input) || item.getTextSw().startsWith(input))
                         .findFirst()
                         .orElse(null);
 
@@ -124,8 +154,16 @@ public class UssdService {
                 }
             }
 
-            return generateMenuResponse(menuId);
+            return generateMenuResponse(menuId,language);
         }
+    }
+
+    private Long getNextMenuId(Long menuId, String selection) {
+        MenuItem menuItem = menuItemRepository.findByMenu_Id(menuId).stream()
+                .filter(item -> item.getTextEn().startsWith(selection) || item.getTextSw().startsWith(selection))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid selection: " + selection));
+        return menuItem.getNextMenuId();
     }
 
     private void fetchAndCachePlayers() {
@@ -156,8 +194,9 @@ public class UssdService {
         Menu menu = menuRepository.findById(DYNAMIC_MENU_ID)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid menu ID: " + DYNAMIC_MENU_ID));
 
-        String menuItemText = index + ". " + player.getName();
-        return new MenuItem(menuItemText, player.getId(), NEXT_MENU_ID, menu, dynamicType);
+        String menuItemTextEn = index + ". " + player.getName();
+        String menuItemTextSw = index + ". " + player.getName();
+        return new MenuItem(menuItemTextEn, menuItemTextSw, player.getId(), NEXT_MENU_ID, menu, dynamicType);
     }
 
 
@@ -167,12 +206,12 @@ public class UssdService {
     }
 
     private Long determineCurrentMenuId(String[] inputs) {
-        Long currentMenuId = 1L; // Start with the main menu ID
+        Long currentMenuId = LANGUAGE_SELECTION_MENU_ID; // Start with the main menu ID
 
         for (String input : inputs) {
             List<MenuItem> menuItems = menuItemRepository.findByMenu_Id(currentMenuId);
             MenuItem selectedItem = menuItems.stream()
-                    .filter(item -> item.getText().startsWith(input + "."))
+                    .filter(item -> item.getTextEn().startsWith(input + ".") || item.getTextSw().startsWith(input + "."))
                     .findFirst()
                     .orElse(null);
 
@@ -211,7 +250,7 @@ public class UssdService {
         // Retrieve current menu items for vote unit
         List<MenuItem> currentMenuItems = menuItemRepository.findByMenu_Id(menuId);
         MenuItem currentItem = currentMenuItems.stream()
-                .filter(item -> item.getText().startsWith(String.valueOf(selectedVoteUnit)))
+                .filter(item -> item.getTextEn().startsWith(String.valueOf(selectedVoteUnit)) || item.getTextSw().startsWith(String.valueOf(selectedVoteUnit)))
                 .findFirst()
                 .orElse(null);
 
@@ -265,10 +304,11 @@ public class UssdService {
             // Determine the current menu ID based on inputs (for vote unit)
             Long menuId = determineCurrentMenuId(inputs);
 
+
             // Retrieve current menu items for bundle unit
             List<MenuItem> currentMenuItems = menuItemRepository.findByMenu_Id(menuId);
             MenuItem currentItem = currentMenuItems.stream()
-                    .filter(item -> item.getText().startsWith(String.valueOf(selectedBundleUnit)))
+                    .filter(item -> item.getTextEn().startsWith(String.valueOf(selectedBundleUnit)) || item.getTextSw().startsWith(String.valueOf(selectedBundleUnit)))
                     .findFirst()
                     .orElse(null);
 

@@ -3,19 +3,20 @@ package com.fredy.mobiAd.dto;
 public class MenuItemDTO {
     private Long id;
     private Long menuId;
-    private String text;
+    private String textEn;
+    private String textSw;
     private Long amount;
     private Long nextMenuId;
 
 
-    public MenuItemDTO(Long id, String text, Long amount, Long nextMenuId, Long menuId) {
+    public MenuItemDTO(Long id, String textEn, String textSw, Long amount, Long nextMenuId,Long menuId) {
         this.id = id;
-        this.text = text;
+        this.textEn = textEn;
+        this.textSw = textSw;
         this.amount = amount;
         this.nextMenuId = nextMenuId;
         this.menuId = menuId;
     }
-
 
     public Long getAmount() {
         return amount;
@@ -41,12 +42,20 @@ public class MenuItemDTO {
         this.menuId = menuId;
     }
 
-    public String getText() {
-        return text;
+    public String getTextEn() {
+        return textEn;
     }
 
-    public void setText(String text) {
-        this.text = text;
+    public void setTextEn(String textEn) {
+        this.textEn = textEn;
+    }
+
+    public String getTextSw() {
+        return textSw;
+    }
+
+    public void setTextSw(String textSw) {
+        this.textSw = textSw;
     }
 
     public Long getNextMenuId() {

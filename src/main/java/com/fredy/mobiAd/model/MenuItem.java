@@ -13,7 +13,8 @@ public class MenuItem {
     @JoinColumn(name = "menu_id", nullable = false)
     private Menu menu;
 
-    private String text;
+    private String textEn;
+    private String textSw;
 
     @Column(nullable = true)
     private Long nextMenuId;
@@ -61,19 +62,33 @@ public class MenuItem {
     // Default constructor
     public MenuItem() {}
 
-    public MenuItem(Long id, Menu menu, String text, Long nextMenuId) {
+    public MenuItem(Long id, Menu menu, String textEn, String textSw, Long nextMenuId) {
         this.id = id;
         this.menu = menu;
-        this.text = text;
+        this.textEn = textEn;
+        this.textSw = textSw;
         this.nextMenuId = nextMenuId;
     }
 
-    public MenuItem(String text, Long playerId, Long nextMenuId, Menu menu, String dynamicType){
-        this.text = text;
-        this.playerId = playerId;
+    public MenuItem(String textEn, String textSw, Long playerId, Long nextMenuId, Menu menu, String dynamicType) {
+        this.textEn = textEn;
+        this.textSw = textSw;
         this.nextMenuId = nextMenuId;
+        this.playerId = playerId;
         this.menu = menu;
         this.dynamicType = dynamicType;
+    }
+
+
+    public MenuItem(Menu menu, String textEn, String textSw, Long nextMenuId, Long amount, Long playerId, String dynamicType, Long referenceId) {
+        this.menu = menu;
+        this.textEn = textEn;
+        this.textSw = textSw;
+        this.nextMenuId = nextMenuId;
+        this.amount = amount;
+        this.playerId = playerId;
+        this.dynamicType = dynamicType;
+        this.referenceId = referenceId;
     }
 
     public Long getNextMenuId() {
@@ -84,12 +99,21 @@ public class MenuItem {
         this.nextMenuId = nextMenuId;
     }
 
-    public String getText() {
-        return text;
+
+    public String getTextEn() {
+        return textEn;
     }
 
-    public void setText(String text) {
-        this.text = text;
+    public void setTextEn(String textEn) {
+        this.textEn = textEn;
+    }
+
+    public String getTextSw() {
+        return textSw;
+    }
+
+    public void setTextSw(String textSw) {
+        this.textSw = textSw;
     }
 
     public Menu getMenu() {
