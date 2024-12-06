@@ -1,9 +1,6 @@
 package com.fredy.mobiAd.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
@@ -16,6 +13,8 @@ public class UserSessionLog {
     private String sessionId;
     private String phoneNumber;
     private String userInput;
+
+    @Column(length = 5000)
     private String response;
     private LocalDateTime timestamp;
 

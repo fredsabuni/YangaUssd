@@ -1,7 +1,13 @@
 package com.fredy.mobiAd.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fredy.mobiAd.dto.*;
+import com.fredy.mobiAd.model.Club;
+import com.fredy.mobiAd.model.Contest;
 import com.fredy.mobiAd.model.Player;
+import com.fredy.mobiAd.model.Plan;
+import com.fredy.mobiAd.repository.ClubRepository;
+import com.fredy.mobiAd.repository.PlanRepository;
 import com.fredy.mobiAd.repository.PlayerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,11 +15,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,11 +33,19 @@ public class ExternalApiService {
     @Autowired
     private PlayerRepository playerRepository;
 
+    @Autowired
+    private PlanRepository planRepository;
+
+    @Autowired
+    private ClubRepository clubRepository;
+
     @Value("${vote.base.url}")
     private String voteBaseUrl;
 
     @Value("${news.base.url}")
     private String newsBaseUrl;
+
+    private static final String CONTESTS_API_URL = "/api/v1/voting/contests";
 
     @Transactional
     @Cacheable("players")
@@ -44,6 +58,50 @@ public class ExternalApiService {
             List<Player> players = playerDTOs.stream().map(this::convertToEntity).collect(Collectors.toList());
             playerRepository.saveAll(players);
             return players;
+        }
+
+        return null;
+    }
+
+    @Transactional
+    @Cacheable("clubs")
+    public List<Club> fetchAndCacheClubs() throws IOException {
+        String url = voteBaseUrl + "/api/v1/subscriptions/topics";
+        ClubResponseDTO response = restTemplate.getForObject(url, ClubResponseDTO.class);
+
+        if (response != null && response.getRespCode() == 2000) {
+            List<ClubDTO> dtoDTOs = response.getItems();
+            for (ClubDTO clubDTO : dtoDTOs) {
+                log.info("ClubDTO: {}", clubDTO);
+            }
+            List<Club> clubs = dtoDTOs.stream().map(this::convertToEntity).collect(Collectors.toList());
+            clubRepository.saveAll(clubs);
+            return clubs;
+        }
+
+        return null;
+    }
+
+
+    @Transactional
+    @Cacheable("plans")
+    public List<Plan> fetchAndCachePlans() throws IOException {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        ClassPathResource resource = new ClassPathResource("plan.json");
+        PlanResponseDTO response = objectMapper.readValue(resource.getInputStream(), PlanResponseDTO.class);
+
+        if (response != null && response.isSuccess()) {
+            List<PlanDTO> plansDTOs = response.getPayload().getPlans();
+            for (PlanDTO planDTO : plansDTOs) {
+                log.info("PlanDTO: {}", planDTO);
+            }
+            List<Plan> plans = plansDTOs.stream()
+                    .map(this::convertToEntity)
+                    .collect(Collectors.toList());
+            log.info("Plans fetched: {}", plans);
+            planRepository.saveAll(plans);
+            return plans;
         }
 
         return null;
@@ -65,13 +123,30 @@ public class ExternalApiService {
         return null;
     }
 
+    public List<Contest> fetchContests() {
+        ContestResponseDTO response = restTemplate.getForObject(CONTESTS_API_URL, ContestResponseDTO.class);
+
+        if (response != null && response.getRespCode() == 2000) {
+            return response.getItems().stream().map(dto -> {
+                Contest contest = new Contest();
+                contest.setId(dto.getId());
+                contest.setName(dto.getName());
+                contest.setStatus(dto.getStatus());
+                return contest;
+            }).collect(Collectors.toList());
+        }
+
+        return List.of();
+    }
+
+
     public PaymentResponseDTO vote(PaymentRequestDTO paymentRequestDTO) {
         String url = voteBaseUrl + "/api/v1/contest/vote";
         return restTemplate.postForObject(url, paymentRequestDTO, PaymentResponseDTO.class);
     }
 
     public SubscriptionResponseDTO news(SubscriptionRequestDTO subscriptionRequestDTO){
-        String url = newsBaseUrl + "/api/v1/subscriptions/subscribe";
+        String url = voteBaseUrl + "/api/v1/subscriptions/subscribe";
         return restTemplate.postForObject(url, subscriptionRequestDTO, SubscriptionResponseDTO.class);
     }
 
@@ -93,5 +168,30 @@ public class ExternalApiService {
         player.setClubColor(playerDTO.getClubColor());
         player.setType(playerDTO.getType());
         return player;
+    }
+
+    private Club convertToEntity(ClubDTO clubDTO) {
+        Club club = new Club();
+        club.setId(clubDTO.getId());
+        club.setClubName(clubDTO.getName());
+        club.setCreatedAt(clubDTO.getCreated_at());
+        club.setUpdatedAt(clubDTO.getUpdated_at());
+        return club;
+    }
+
+    private Plan convertToEntity(PlanDTO planDTO) {
+        log.info("Converting PlanDTO: {}", planDTO);
+
+        Plan plan = new Plan();
+        plan.setId(planDTO.getId());
+        plan.setName(planDTO.getName());
+        if (planDTO.getAmount() != null) {
+            plan.setAmount(planDTO.getAmount());
+            log.info("Amount set: {}", plan.getAmount());
+        }
+        plan.setCreatedAt(planDTO.getCreatedAt());
+        plan.setUpdatedAt(planDTO.getUpdatedAt());
+
+        return plan;
     }
 }

@@ -1,23 +1,33 @@
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/MobiAdApplication.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/controller/MenuController.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/controller/UssdController.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/dto/MenuDTO.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/dto/MenuItemDTO.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/dto/PaymentRequestDTO.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/dto/PaymentResponseDTO.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/dto/PlayerDTO.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/dto/PlayerResponseDTO.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/model/Menu.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/model/MenuItem.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/model/Player.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/model/UserSessionLog.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/repository/MenuItemRepository.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/repository/MenuRepository.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/repository/PlayerRepository.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/repository/UserSessionLogRepository.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/service/ExternalApiService.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/service/MenuItemService.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/service/MenuService.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/service/UssdService.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/util/CacheRefreshScheduler.java
-/Users/fredmalack/Documents/Projects/Applications/yangaUSSD/src/main/java/com/fredy/mobiAd/util/RestTemplateConfig.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/MobiAdApplication.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/controller/MenuController.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/controller/UssdController.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/dto/ClubDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/dto/ClubResponseDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/dto/MenuDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/dto/MenuItemDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/dto/PaymentRequestDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/dto/PaymentResponseDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/dto/PlanDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/dto/PlanResponseDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/dto/PlayerDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/dto/PlayerResponseDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/dto/SubscriptionRequestDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/dto/SubscriptionResponseDTO.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/model/Club.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/model/Menu.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/model/MenuItem.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/model/Plan.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/model/Player.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/model/UserSessionLog.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/repository/ClubRepository.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/repository/MenuItemRepository.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/repository/MenuRepository.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/repository/PlanRepository.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/repository/PlayerRepository.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/repository/UserSessionLogRepository.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/service/ExternalApiService.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/service/MenuItemService.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/service/MenuService.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/service/UssdService.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/util/CacheRefreshScheduler.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/util/RestTemplateConfig.java

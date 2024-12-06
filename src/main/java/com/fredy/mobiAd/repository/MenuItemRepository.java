@@ -1,6 +1,5 @@
 package com.fredy.mobiAd.repository;
 
-import com.fredy.mobiAd.model.Menu;
 import com.fredy.mobiAd.model.MenuItem;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;

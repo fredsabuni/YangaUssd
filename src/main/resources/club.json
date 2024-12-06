@@ -1,0 +1,20 @@
+{
+  "success": true,
+  "message": "Clubs fetched successfully",
+  "payload": {
+    "clubs": [
+      {
+        "id": 1,
+        "name": "Yanga",
+        "created_at": "31-Aug-2024 07:43",
+        "updated_at": "2024-08-31T07:43:26.000000Z"
+      },
+      {
+        "id": 2,
+        "name": "Simba",
+        "created_at": "01-Sept-2024 07:43",
+        "updated_at": "2024-08-31T07:43:26.000000Z"
+      }
+    ]
+  }
+}

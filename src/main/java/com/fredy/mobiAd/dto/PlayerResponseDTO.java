@@ -6,6 +6,8 @@ public class PlayerResponseDTO {
     private boolean success;
     private String message;
     private Payload payload;
+    private Long respCode;
+
 
     public static class Payload {
         private List<PlayerDTO> players;
@@ -22,6 +24,14 @@ public class PlayerResponseDTO {
 
     public Payload getPayload() {
         return payload;
+    }
+
+    public Long getRespCode() {
+        return respCode;
+    }
+
+    public void setRespCode(Long respCode) {
+        this.respCode = respCode;
     }
 
     public void setPayload(Payload payload) {

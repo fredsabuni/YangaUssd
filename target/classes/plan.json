@@ -1,0 +1,36 @@
+{
+  "success": true,
+  "message": "Plans fetched successfully",
+  "payload": {
+    "plans": [
+      {
+        "id": 1,
+        "name": "Wiki",
+        "amount": 1000,
+        "created_at": "31-Aug-2024 07:43",
+        "updated_at": "2024-08-31T07:43:26.000000Z"
+      },
+      {
+        "id": 2,
+        "name": "Mwezi",
+        "amount": 3000,
+        "created_at": "31-Aug-2024 07:43",
+        "updated_at": "2024-08-31T07:43:26.000000Z"
+      },
+      {
+        "id": 3,
+        "name": "Miezi 3",
+        "amount": 5000,
+        "created_at": "31-Aug-2024 07:43",
+        "updated_at": "2024-08-31T07:43:26.000000Z"
+      },
+      {
+        "id": 4,
+        "name": "Miezi 6",
+        "amount": 8000,
+        "created_at": "31-Aug-2024 07:43",
+        "updated_at": "2024-08-31T07:43:26.000000Z"
+      }
+    ]
+  }
+}

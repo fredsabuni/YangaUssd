@@ -76,6 +76,15 @@ public class MenuItem {
         this.dynamicType = dynamicType;
     }
 
+    public MenuItem(String text, Long playerId, Long nextMenuId, Menu menu, String dynamicType, Long amount){
+        this.text = text;
+        this.playerId = playerId;
+        this.nextMenuId = nextMenuId;
+        this.menu = menu;
+        this.dynamicType = dynamicType;
+        this.amount = amount;
+    }
+
     public Long getNextMenuId() {
         return nextMenuId;
     }
