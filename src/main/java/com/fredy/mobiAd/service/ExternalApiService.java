@@ -2,19 +2,16 @@ package com.fredy.mobiAd.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fredy.mobiAd.dto.*;
-import com.fredy.mobiAd.model.Club;
-import com.fredy.mobiAd.model.Contest;
-import com.fredy.mobiAd.model.Player;
-import com.fredy.mobiAd.model.Plan;
+import com.fredy.mobiAd.model.*;
 import com.fredy.mobiAd.repository.ClubRepository;
 import com.fredy.mobiAd.repository.PlanRepository;
 import com.fredy.mobiAd.repository.PlayerRepository;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -22,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+
 
 @Service
 public class ExternalApiService {
@@ -44,8 +42,6 @@ public class ExternalApiService {
 
     @Value("${news.base.url}")
     private String newsBaseUrl;
-
-    private static final String CONTESTS_API_URL = "/api/v1/voting/contests";
 
     @Transactional
     @Cacheable("players")
@@ -124,7 +120,8 @@ public class ExternalApiService {
     }
 
     public List<Contest> fetchContests() {
-        ContestResponseDTO response = restTemplate.getForObject(CONTESTS_API_URL, ContestResponseDTO.class);
+        String url = voteBaseUrl + "/api/v1/voting/contests";
+        ContestResponseDTO response = restTemplate.getForObject(url, ContestResponseDTO.class);
 
         if (response != null && response.getRespCode() == 2000) {
             return response.getItems().stream().map(dto -> {
@@ -139,13 +136,45 @@ public class ExternalApiService {
         return List.of();
     }
 
+    public List<Contestant> fetchContestants(Long contestId) {
+        String url = voteBaseUrl + "/api/v1/voting/contestants?contestId={contestId}";
+        ContestantResponseDTO response = restTemplate.getForObject(
+                url,
+                ContestantResponseDTO.class,
+                contestId
+        );
+
+        if (response != null && response.getRespCode() == 2000) {
+            return response.getItems().stream().map(dto -> {
+                Contestant contestant = new Contestant();
+                contestant.setId(dto.getId());
+                contestant.setName(dto.getName());
+                contestant.setClub(dto.getClub());
+                contestant.setVotingCode(dto.getVotingCode());
+                contestant.setContestId(dto.getContestId());
+                return contestant;
+            }).collect(Collectors.toList());
+        }
+
+        return List.of();
+    }
+
+    public VoteResponseDTO submitVote(VoteRequestDTO voteRequest) {
+        try {
+            String url = voteBaseUrl + "/api/v1/voting/vote";
+            return restTemplate.postForObject(url, voteRequest, VoteResponseDTO.class);
+        } catch (Exception e) {
+            log.error("Error submitting vote: ", e);
+            return null;
+        }
+    }
 
     public PaymentResponseDTO vote(PaymentRequestDTO paymentRequestDTO) {
         String url = voteBaseUrl + "/api/v1/contest/vote";
         return restTemplate.postForObject(url, paymentRequestDTO, PaymentResponseDTO.class);
     }
 
-    public SubscriptionResponseDTO news(SubscriptionRequestDTO subscriptionRequestDTO){
+    public SubscriptionResponseDTO news(SubscriptionRequestDTO subscriptionRequestDTO) {
         String url = voteBaseUrl + "/api/v1/subscriptions/subscribe";
         return restTemplate.postForObject(url, subscriptionRequestDTO, SubscriptionResponseDTO.class);
     }

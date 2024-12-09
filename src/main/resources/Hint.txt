@@ -7,21 +7,21 @@ Step 1: Build Application
 -> mvn clean package
 
 Step 2: Transfer the JAR file to the Ubuntu server:
--> scp target/mobiAd-0.0.1-SNAPSHOT.jar root@5.180.149.168:/opt/YangaUSSD/instance_3
+-> scp target/mobiAd-0.0.1-SNAPSHOT.jar root@62.84.183.71:/opt/NbcUSSD/instance_1
 
 Step 3: Configure Systemd Service
--> sudo nano /etc/systemd/system/yanga_3.service
+-> sudo nano /etc/systemd/system/nbc_1.service
 
 Step 4: Edit service file
 ===============================
 [Unit]
-Description=Yanga USSD Solution
+Description=Nbc USSD Solution
 After=network.target
 
 [Service]
-User=yanga-ussd
-Group=yanga-ussd
-ExecStart=/usr/bin/java -jar /opt/YangaUSSD/instance_3/mobiAd-0.0.1-SNAPSHOT.jar
+User=nbc-ussd
+Group=nbc-ussd
+ExecStart=/usr/bin/java -jar /opt/NbcUSSD/instance_1/mobiAd-0.0.1-SNAPSHOT.jar
 SuccessExitStatus=143
 Restart=on-failure
 RestartSec=10
@@ -34,13 +34,13 @@ Step 5: Reload Systemd
 -> sudo systemctl daemon-reload
 
 Step 6:Enable the service to start on boot
--> sudo systemctl enable yanga_3
+-> sudo systemctl enable nbc_1
 
 Step 7: Start the service
--> sudo systemctl start yanga_3
+-> sudo systemctl start nbc_1
 
 Step 8: Check Status
--> sudo systemctl status yanga_3
+-> sudo systemctl status nbc_1
 
 SETTING UP LOAD BALANCER USING NGINX
 
@@ -53,15 +53,15 @@ sudo nano /etc/nginx/sites-available/springboot-loadbalancer
 Step 3: configuration
 ===
 upstream springboot_backend {
-    server 127.0.0.1:8081;
-    server 127.0.0.1:8082;
-    server 127.0.0.1:8083;
+    server 127.0.0.1:8081 max_fails=3 fail_timeout=30s;
+    server 127.0.0.1:8082 max_fails=3 fail_timeout=30s;
+    server 127.0.0.1:8083 max_fails=3 fail_timeout=30s;
 }
 
 server {
     listen 80;
 
-    server_name your_domain_or_ip;
+    server_name 62.84.183.71;
 
     location / {
         proxy_pass http://springboot_backend;
@@ -69,6 +69,10 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+   location /health {
+        proxy_pass http://springboot_backend/actuator/health;
     }
 }
 ===
@@ -85,7 +89,7 @@ Step 6: Reload Nginx
 MONITORING
 
 Monitor Logs
--> sudo journalctl -u yanga_1 -f
+-> sudo journalctl -u nbc_1 -f
 -> htop
 
 

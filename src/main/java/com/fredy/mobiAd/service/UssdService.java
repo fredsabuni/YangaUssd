@@ -1,10 +1,8 @@
 package com.fredy.mobiAd.service;
 
-import com.fredy.mobiAd.dto.PaymentRequestDTO;
-import com.fredy.mobiAd.dto.PaymentResponseDTO;
-import com.fredy.mobiAd.dto.SubscriptionRequestDTO;
-import com.fredy.mobiAd.dto.SubscriptionResponseDTO;
+import com.fredy.mobiAd.dto.*;
 import com.fredy.mobiAd.model.*;
+import com.fredy.mobiAd.repository.ContestantRepository;
 import com.fredy.mobiAd.repository.UserSessionLogRepository;
 import com.fredy.mobiAd.repository.MenuItemRepository;
 import com.fredy.mobiAd.repository.MenuRepository;
@@ -45,12 +43,16 @@ public class UssdService {
     private MenuItemRepository menuItemRepository;
 
     @Autowired
+    private ContestantRepository contestantRepository;
+
+    @Autowired
     private UserSessionLogRepository userSessionLogRepository;
 
     @Autowired
     private ExternalApiService externalApiService;
 
     private static final Long DYNAMIC_CONTEST_MENU_ID = 6L; // Assuming menu ID for contests
+    private static final Long DYNAMIC_CONTESTANT_MENU_ID = 7L; // Assuming menu ID for contestants
 
     public String handleUssdRequest(String sessionId, String phoneNumber, String text) {
         String response;
@@ -118,6 +120,23 @@ public class UssdService {
             }
         }
 
+        // Handle the case where the input length is 1 (Voting)
+        if (inputs.length == 1 && inputs[0].equals("2")) {
+            fetchAndCacheContests();
+            return generateDynamicMenuResponse(DYNAMIC_CONTEST_MENU_ID, "CONTEST");
+        }
+
+        // Handle contests and contestants
+        if (inputs.length == 2 && inputs[0].equals("2")) {
+            Long contestId = determineContestId(inputs[1]);
+            fetchAndCacheContestants(contestId);
+            return generateDynamicMenuResponse(DYNAMIC_CONTESTANT_MENU_ID, "CONTESTANT");
+        }
+
+        //Trigger Voting
+        if (inputs.length == 4 && inputs[0].equals("2")) {
+            return handleVote(phoneNumber, inputs);
+        }
 
         // Handle Plan selection independently (if needed)
         if (combinedInputs.startsWith(PLAN_INPUT)) {
@@ -133,14 +152,17 @@ public class UssdService {
             }
         }
 
-        // Handle the case where the input length is 1 (Voting)
-        if (inputs.length == 1 && inputs[0].equals("2")) {
-            fetchAndCacheContests();
-            return generateDynamicMenuResponse(DYNAMIC_CONTEST_MENU_ID, "CONTEST");
+        // Handle Plan selection For Voting
+        if(inputs.length == 3 && (inputs[0] + "*" + inputs[1]).equals("2*1")){
+            fetchAndCachePlans();
+            return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN"); 
+        } else if (inputs.length == 3 && (inputs[0] + "*" + inputs[1]).equals("2*2")) {
+            fetchAndCachePlans();
+            return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
         }
 
-        // Default flow control for navigating menus
 
+        // Default flow control for navigating menus
         for (String input : inputs) {
             List<MenuItem> menuItems = menuItemRepository.findByMenu_Id(menuId);
             MenuItem menuItem = menuItems.stream()
@@ -187,6 +209,32 @@ public class UssdService {
                 }).toList();
 
         menuItemRepository.saveAll(contestMenuItems);
+    }
+
+    private void fetchAndCacheContestants(Long contestId) {
+        // Fetch contestants from the external API
+        List<Contestant> contestants = externalApiService.fetchContestants(contestId);
+
+        // Delete old contestant menu items
+        menuItemRepository.deleteByDynamicType("CONTESTANT");
+
+        // Add fetched contestants as new menu items
+        Menu contestantMenu = menuRepository.findById(DYNAMIC_CONTESTANT_MENU_ID)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid menu ID: " + DYNAMIC_CONTESTANT_MENU_ID));
+
+        List<MenuItem> contestantMenuItems = IntStream.range(0, contestants.size())
+                .mapToObj(i -> {
+                    Contestant contestant = contestants.get(i);
+                    return new MenuItem(
+                            (i + 1) + ". " + contestant.getName() + " - " + contestant.getClub(),
+                            contestant.getId(),
+                            null, // No next menu for contestants yet
+                            contestantMenu,
+                            "CONTESTANT"
+                    );
+                }).toList();
+
+        menuItemRepository.saveAll(contestantMenuItems);
     }
 
 
@@ -238,6 +286,67 @@ public class UssdService {
         }
 
     }
+
+    @Transactional
+    private String handleVote(String phoneNumber, String[] inputs) {
+        try {
+            int selectedPlanIndex = Integer.parseInt(inputs[inputs.length - 1]); // Plan selection
+            int selectedContestantIndex = Integer.parseInt(inputs[inputs.length - 2]); // Contestant selection
+
+            // Fetch the current menu ID to get menu items for plans
+            Long menuId = determineCurrentMenuId(inputs);
+
+            // Retrieve selected plan details
+            List<MenuItem> planMenuItems = menuItemRepository.findByMenu_Id(menuId);
+            MenuItem selectedPlan = planMenuItems.stream()
+                    .filter(item -> item.getText().startsWith(String.valueOf(selectedPlanIndex)))
+                    .findFirst()
+                    .orElse(null);
+
+            if (selectedPlan == null) {
+                return "END Invalid plan selection. Please try again.";
+            }
+
+            Long amount = selectedPlan.getAmount(); // Get the amount from the selected plan
+
+            // Retrieve contestant details from the dynamic menu
+            List<MenuItem> contestantMenuItems = menuItemRepository.findByDynamicType("CONTESTANT");
+            if (contestantMenuItems.isEmpty()) {
+                return "END No contestants available.";
+            }
+
+            MenuItem selectedContestantMenuItem = contestantMenuItems.get(selectedContestantIndex - 1);
+            Long contestantId = selectedContestantMenuItem.getPlayerId(); // Assuming `playerId` is contestantId in this context
+
+            // Fetch contestant details from the Contestant table
+            Contestant contestant = contestantRepository.findById(contestantId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid contestant ID: " + contestantId));
+            String votingCode = contestant.getVotingCode(); // Get the votingCode
+
+            // Prepare the vote request
+            VoteRequestDTO voteRequest = new VoteRequestDTO();
+            voteRequest.setContestantCode(votingCode);
+            voteRequest.setPhoneNumber(phoneNumber.replace("+", "")); // Clean the phone number
+            voteRequest.setChannel("USSD"); // Set the voting channel
+            voteRequest.setAmount(amount);
+
+            log.info(voteRequest.toString());
+
+            // Call the external API to submit the vote
+            VoteResponseDTO voteResponse = externalApiService.submitVote(voteRequest);
+
+            if (voteResponse != null && voteResponse.getRespCode() == 2000 ) {
+                return "END Your vote has been submitted successfully!";
+            } else {
+                return "END Failed to submit your vote. Please try again later.";
+            }
+
+        } catch (Exception e) {
+            log.error("Error handling vote: ", e);
+            return "END An error occurred while processing your vote. Please try again later.";
+        }
+    }
+
 
 //    private void fetchAndCacheGoals() {
 //        List<MenuItem> existingGoals = menuItemRepository.findByDynamicType("GOAL");
@@ -299,6 +408,15 @@ public class UssdService {
         }
 
         return currentMenuId;
+    }
+
+    private Long determineContestId(String input) {
+        List<MenuItem> contestMenuItems = menuItemRepository.findByDynamicType("CONTEST");
+        MenuItem selectedContest = contestMenuItems.stream()
+                .filter(item -> item.getText().startsWith(input + "."))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid contest selection."));
+        return selectedContest.getPlayerId(); // Assuming `playerId` stores the contestId
     }
 
     @Transactional
@@ -434,4 +552,8 @@ public class UssdService {
             return "END Umeshindwa kujiunga kwa sasa.";
         }
     }
+
+
+
+
 }
