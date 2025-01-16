@@ -7,10 +7,10 @@ Step 1: Build Application
 -> mvn clean package
 
 Step 2: Transfer the JAR file to the Ubuntu server:
--> scp target/mobiAd-0.0.1-SNAPSHOT.jar root@62.84.183.71:/opt/NbcUSSD/instance_1
+-> scp target/mobiAd-0.0.1-SNAPSHOT.jar root@62.84.183.71:/opt/NbcUSSD/instance_3
 
 Step 3: Configure Systemd Service
--> sudo nano /etc/systemd/system/nbc_1.service
+-> sudo nano /etc/systemd/system/nbc_3.service
 
 Step 4: Edit service file
 ===============================
@@ -21,7 +21,7 @@ After=network.target
 [Service]
 User=nbc-ussd
 Group=nbc-ussd
-ExecStart=/usr/bin/java -jar /opt/NbcUSSD/instance_1/mobiAd-0.0.1-SNAPSHOT.jar
+ExecStart=/usr/bin/java -jar /opt/NbcUSSD/instance_3/mobiAd-0.0.1-SNAPSHOT.jar
 SuccessExitStatus=143
 Restart=on-failure
 RestartSec=10
@@ -34,13 +34,13 @@ Step 5: Reload Systemd
 -> sudo systemctl daemon-reload
 
 Step 6:Enable the service to start on boot
--> sudo systemctl enable nbc_1
+-> sudo systemctl enable nbc_3
 
 Step 7: Start the service
--> sudo systemctl start nbc_1
+-> sudo systemctl start nbc_3
 
 Step 8: Check Status
--> sudo systemctl status nbc_1
+-> sudo systemctl status nbc_3
 
 SETTING UP LOAD BALANCER USING NGINX
 

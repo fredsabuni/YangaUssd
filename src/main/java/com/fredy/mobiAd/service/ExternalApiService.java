@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fredy.mobiAd.dto.*;
 import com.fredy.mobiAd.model.*;
 import com.fredy.mobiAd.repository.ClubRepository;
+import com.fredy.mobiAd.repository.ContestantRepository;
 import com.fredy.mobiAd.repository.PlanRepository;
 import com.fredy.mobiAd.repository.PlayerRepository;
 import jakarta.transaction.Transactional;
@@ -33,6 +34,9 @@ public class ExternalApiService {
 
     @Autowired
     private PlanRepository planRepository;
+
+    @Autowired
+    private ContestantRepository contestantRepository;
 
     @Autowired
     private ClubRepository clubRepository;
@@ -136,28 +140,64 @@ public class ExternalApiService {
         return List.of();
     }
 
+    @Transactional
     public List<Contestant> fetchContestants(Long contestId) {
-        String url = voteBaseUrl + "/api/v1/voting/contestants?contestId={contestId}";
-        ContestantResponseDTO response = restTemplate.getForObject(
-                url,
-                ContestantResponseDTO.class,
-                contestId
-        );
+        try {
 
-        if (response != null && response.getRespCode() == 2000) {
-            return response.getItems().stream().map(dto -> {
-                Contestant contestant = new Contestant();
-                contestant.setId(dto.getId());
-                contestant.setName(dto.getName());
-                contestant.setClub(dto.getClub());
-                contestant.setVotingCode(dto.getVotingCode());
-                contestant.setContestId(dto.getContestId());
-                return contestant;
-            }).collect(Collectors.toList());
+            // Fetch existing contestants for the given contestId and delete them
+            List<Contestant> existingContestants = contestantRepository.findByContestId(contestId);
+            if (!existingContestants.isEmpty()) {
+                contestantRepository.deleteAll(existingContestants);
+            }
+
+            String url = voteBaseUrl + "/api/v1/voting/contestants?contestId={contestId}";
+            ContestantResponseDTO response = restTemplate.getForObject(
+                    url,
+                    ContestantResponseDTO.class,
+                    contestId
+            );
+
+            if (response != null && response.getRespCode() == 2000) {
+                List<ContestantDTO> contestantDTOs = response.getItems();
+                List<Contestant> contestants = contestantDTOs.stream()
+                        .map(this::convertToEntity)
+                        .collect(Collectors.toList());
+
+                // Save the contestants to the database
+                contestantRepository.saveAll(contestants);
+                return contestants;
+            } else {
+                log.warn("No contestants found for contestId: {}", contestId);
+            }
+
+//            if (response != null && response.getRespCode() == 2000) {
+//                return response.getItems().stream().map(dto -> {
+//                    Contestant contestant = new Contestant();
+//                    contestant.setId(dto.getId());
+//                    contestant.setName(dto.getName());
+//                    contestant.setClub(dto.getClub());
+//                    contestant.setVotingCode(dto.getVotingCode());
+//                    contestant.setContestId(dto.getContestId());
+//                    return contestant;
+//                }).collect(Collectors.toList());
+//            }
+        } catch (Exception e) {
+            log.error("Error fetching contestants for contestId: {}", contestId, e);
         }
-
         return List.of();
     }
+
+    private Contestant convertToEntity(ContestantDTO contestantDTO) {
+        Contestant contestant = new Contestant();
+        contestant.setId(contestantDTO.getId());
+        contestant.setName(contestantDTO.getName());
+        contestant.setClub(contestantDTO.getClub());
+        contestant.setContestId(contestantDTO.getContestId());
+        contestant.setVotingCode(contestantDTO.getVotingCode());
+        contestant.setStatus(contestantDTO.getStatus());
+        return contestant;
+    }
+
 
     public VoteResponseDTO submitVote(VoteRequestDTO voteRequest) {
         try {

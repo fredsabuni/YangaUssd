@@ -6,6 +6,16 @@ public class ContestantDTO {
     private String club;
     private String votingCode;
     private Long contestId;
+    private String status;
+    private String createdDate;
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
     public Long getId() {
         return id;

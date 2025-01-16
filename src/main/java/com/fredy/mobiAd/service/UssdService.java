@@ -31,6 +31,7 @@ public class UssdService {
     private static final Long NEXT_MENU_PLAN_ID = 4L;
     private static final String TEAM_INPUT = "1*1";
     private static final String PLAN_INPUT = "1*2";
+
 //    private static final String FETCH_GOALS_INPUT = "1*1*2";
 //    private static final String FETCH_GOALS_INPUT_1 = "1*2*2";
 
@@ -99,6 +100,13 @@ public class UssdService {
         String combinedInputs = String.join("*", inputs);
         Long menuId = 1L; // Start with the main menu
 
+        // Determine the current menu ID based on inputs (for vote unit)
+        menuId = determineCurrentMenuId(inputs);
+
+        if (inputs.length == 1 && inputs[0].equals("1")) {
+            Long nextMenuId = 4L; // Replace with dynamic fetching if needed
+            return generateMenuResponse(nextMenuId);
+        }
 
         // Handle Generic News selection
         if (combinedInputs.startsWith(TEAM_INPUT)) {
@@ -290,24 +298,10 @@ public class UssdService {
     @Transactional
     private String handleVote(String phoneNumber, String[] inputs) {
         try {
-            int selectedPlanIndex = Integer.parseInt(inputs[inputs.length - 1]); // Plan selection
-            int selectedContestantIndex = Integer.parseInt(inputs[inputs.length - 2]); // Contestant selection
-
-            // Fetch the current menu ID to get menu items for plans
-            Long menuId = determineCurrentMenuId(inputs);
-
-            // Retrieve selected plan details
-            List<MenuItem> planMenuItems = menuItemRepository.findByMenu_Id(menuId);
-            MenuItem selectedPlan = planMenuItems.stream()
-                    .filter(item -> item.getText().startsWith(String.valueOf(selectedPlanIndex)))
-                    .findFirst()
-                    .orElse(null);
-
-            if (selectedPlan == null) {
-                return "END Invalid plan selection. Please try again.";
-            }
-
-            Long amount = selectedPlan.getAmount(); // Get the amount from the selected plan
+            // The second last input represents the contestant selection
+            int selectedContestantIndex = Integer.parseInt(inputs[inputs.length - 2]);
+            // The last input represents the plan selection
+            int selectedPlanIndex = Integer.parseInt(inputs[inputs.length - 1]);
 
             // Retrieve contestant details from the dynamic menu
             List<MenuItem> contestantMenuItems = menuItemRepository.findByDynamicType("CONTESTANT");
@@ -315,27 +309,47 @@ public class UssdService {
                 return "END No contestants available.";
             }
 
-            MenuItem selectedContestantMenuItem = contestantMenuItems.get(selectedContestantIndex - 1);
-            Long contestantId = selectedContestantMenuItem.getPlayerId(); // Assuming `playerId` is contestantId in this context
+            // Validate contestant index
+            if (selectedContestantIndex <= 0 || selectedContestantIndex > contestantMenuItems.size()) {
+                return "END Invalid contestant selection. Please try again.";
+            }
 
-            // Fetch contestant details from the Contestant table
+            MenuItem selectedContestantMenuItem = contestantMenuItems.get(selectedContestantIndex - 1);
+            Long contestantId = selectedContestantMenuItem.getPlayerId(); // Assuming playerId represents the contestant ID
+
+            // Fetch the contestant details from the Contestant table
             Contestant contestant = contestantRepository.findById(contestantId)
                     .orElseThrow(() -> new IllegalArgumentException("Invalid contestant ID: " + contestantId));
-            String votingCode = contestant.getVotingCode(); // Get the votingCode
+            String votingCode = contestant.getVotingCode(); // Fetch the voting code
+
+            // Determine the current menu ID based on inputs (for vote unit)
+            Long menuId = DYNAMIC_PLAN_MENU_ID;
+
+            // Retrieve current menu items for bundle unit
+            List<MenuItem> currentMenuItems = menuItemRepository.findByMenu_Id(menuId);
+            MenuItem currentItem = currentMenuItems.stream()
+                    .filter(item -> item.getText().startsWith(String.valueOf(selectedPlanIndex)))
+                    .findFirst()
+                    .orElse(null);
+
+            if (currentItem == null) {
+                return "END Chaguo sio sahihi. Tafadhali jaribu tena.";
+            }
+            Long amount = currentItem.getAmount();
+            // Log the details for debugging
+            log.info("votingCode: {}, Processing voting of amount: {}, phoneNumber: {}", votingCode, amount, phoneNumber);
 
             // Prepare the vote request
             VoteRequestDTO voteRequest = new VoteRequestDTO();
-            voteRequest.setContestantCode(votingCode);
+            voteRequest.setContestantCode(votingCode); // Use the voting code from the Contestant table
             voteRequest.setPhoneNumber(phoneNumber.replace("+", "")); // Clean the phone number
             voteRequest.setChannel("USSD"); // Set the voting channel
             voteRequest.setAmount(amount);
 
-            log.info(voteRequest.toString());
-
             // Call the external API to submit the vote
             VoteResponseDTO voteResponse = externalApiService.submitVote(voteRequest);
 
-            if (voteResponse != null && voteResponse.getRespCode() == 2000 ) {
+            if (voteResponse != null && voteResponse.getRespCode() == 2000) {
                 return "END Your vote has been submitted successfully!";
             } else {
                 return "END Failed to submit your vote. Please try again later.";
@@ -346,6 +360,7 @@ public class UssdService {
             return "END An error occurred while processing your vote. Please try again later.";
         }
     }
+
 
 
 //    private void fetchAndCacheGoals() {
