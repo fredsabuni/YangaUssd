@@ -54,8 +54,8 @@ jobs:
           send "sed -i 's/^server\\.port=.*/server.port=${{ matrix.port }}/' src/main/resources/application.properties\r"
           expect "$ "
 
-          send "echo 'Building application...'\r"
-          send "./mvnw clean package -DskipTests || exit 1\r"
+          send "echo 'Building application with mvn...'\r"
+          send "mvn clean package -DskipTests || exit 1\r"
           expect "$ "
 
           send "echo 'Removing old JAR file (if exists)...'\r"
