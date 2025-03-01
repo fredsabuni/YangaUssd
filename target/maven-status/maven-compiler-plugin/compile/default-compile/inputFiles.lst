@@ -38,5 +38,6 @@
 /Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/service/MenuItemService.java
 /Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/service/MenuService.java
 /Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/service/UssdService.java
+/Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/util/CacheConfig.java
 /Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/util/CacheRefreshScheduler.java
 /Users/fredmalack/Documents/Projects/Applications/yangaUSSD V1.1/src/main/java/com/fredy/mobiAd/util/RestTemplateConfig.java

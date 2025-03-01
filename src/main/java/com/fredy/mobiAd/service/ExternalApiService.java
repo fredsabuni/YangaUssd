@@ -66,6 +66,12 @@ public class ExternalApiService {
     @Transactional
     @Cacheable("clubs")
     public List<Club> fetchAndCacheClubs() throws IOException {
+        List<Club> clubsFromDb = clubRepository.findAll();
+        if (!clubsFromDb.isEmpty()) {
+            log.info("Returning clubs from database: {} clubs found", clubsFromDb.size());
+            return clubsFromDb; // Cached by @Cacheable
+        }
+
         String url = voteBaseUrl + "/api/v1/subscriptions/topics";
         ClubResponseDTO response = restTemplate.getForObject(url, ClubResponseDTO.class);
 
@@ -82,10 +88,35 @@ public class ExternalApiService {
         return null;
     }
 
+    public List<Plan> fetchClubsLocally() throws IOException {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        ClassPathResource resource = new ClassPathResource("club.json");
+        PlanResponseDTO response = objectMapper.readValue(resource.getInputStream(), PlanResponseDTO.class);
+
+        if (response != null && response.isSuccess()) {
+            List<PlanDTO> plansDTOs = response.getPayload().getPlans();
+            for (PlanDTO planDTO : plansDTOs) {
+                log.info("PlanDTO: {}", planDTO);
+            }
+            List<Plan> plans = plansDTOs.stream()
+                    .map(this::convertToEntity)
+                    .collect(Collectors.toList());
+            return plans;
+        }
+
+        return null;
+    }
+
 
     @Transactional
     @Cacheable("plans")
     public List<Plan> fetchAndCachePlans() throws IOException {
+        List<Plan> plansFromDb = planRepository.findAll();
+        if (!plansFromDb.isEmpty()) {
+            log.info("Returning plans from database: {} plans found", plansFromDb.size());
+            return plansFromDb; // Cached by @Cacheable
+        }
 
         ObjectMapper objectMapper = new ObjectMapper();
         ClassPathResource resource = new ClassPathResource("plan.json");

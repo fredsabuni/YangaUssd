@@ -103,3 +103,20 @@ Setup
 -> sudo nano /etc/ipsec.conf
 -> sudo nano /etc/ipsec.secrets
 VPN Name: airtelVPN
+
+
+===== New DB =====
+-> user: bamba, pwd: Arusha!2025World
+
+docker run -d \
+  --name mysql-container \
+  -p 3306:3306 \
+  -e MYSQL_ROOT_PASSWORD=ArushaDB2025World \
+  -e MYSQL_DATABASE=bambaUSSD \
+  mysql:latest
+
+docker exec -it mysql-container mysql -uroot -pArushaDB2025World
+
+DB User
+-> CREATE USER 'bamba'@'%' IDENTIFIED BY 'crystalClearDBPwd';
+-> GRANT ALL PRIVILEGES ON my_database.* TO 'bamba'@'%';
