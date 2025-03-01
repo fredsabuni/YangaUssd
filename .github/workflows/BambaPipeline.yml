@@ -3,7 +3,7 @@ name: Bamba Pipeline
 on:
   push:
     branches:
-      - bamba
+      - main
 
 jobs:
   deploy:
@@ -43,7 +43,7 @@ jobs:
           sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }} << 'EOF'
             echo 'Pulling latest code...'
             cd /opt/BambaRepo &&
-            git pull origin bamba
+            git pull origin main
 
             echo 'Updating server.port in application.properties...'
             sed -i 's/^server\.port=.*/server.port=${{ matrix.port }}/' src/main/resources/application.properties
