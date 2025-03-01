@@ -1,0 +1,56 @@
+name: Bamba Pipeline
+
+on:
+  push:
+    branches:
+      - bamba
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - instance: instance_4
+            ip: 62.84.183.71 
+            port: 8084
+            service: nbc_4
+          # - instance: instance2
+          #   ip: 62.84.183.71 
+          #   port: 8082
+          #   service: service2
+          # - instance: instance3
+          #   ip: 62.84.183.71 
+          #   port: 8083
+          #   service: service3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Stop Spring Boot service on ${{ matrix.instance }}
+        run: |
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }} "
+            echo 'Stopping service: ${{ matrix.service }}' &&
+            sudo systemctl stop ${{ matrix.service }}
+          "
+
+      - name: Deploy and restart Spring Boot application on ${{ matrix.instance }}
+        run: |
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }} << 'EOF'
+            echo 'Pulling latest code...'
+            cd /opt/BambaRepo &&
+            git pull origin bamba
+
+            echo 'Updating server.port in application.properties...'
+            sed -i 's/^server\.port=.*/server.port=${{ matrix.port }}/' src/main/resources/application.properties
+
+            echo 'Building application...'
+            ./mvnw clean install -DskipTests
+
+            echo 'Restarting service ${{ matrix.service }} with port ${{ matrix.port }}...'
+            sudo systemctl start ${{ matrix.service }}
+          EOF
