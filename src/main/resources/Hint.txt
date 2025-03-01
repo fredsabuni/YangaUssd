@@ -7,10 +7,10 @@ Step 1: Build Application
 -> mvn clean package
 
 Step 2: Transfer the JAR file to the Ubuntu server:
--> scp target/mobiAd-0.0.1-SNAPSHOT.jar root@62.84.183.71:/opt/NbcUSSD/instance_3
+-> scp target/mobiAd-0.0.1-SNAPSHOT.jar root@62.84.183.71:/opt/NbcUSSD/instance_4
 
 Step 3: Configure Systemd Service
--> sudo nano /etc/systemd/system/nbc_3.service
+-> sudo nano /etc/systemd/system/nbc_4.service
 
 Step 4: Edit service file
 ===============================
@@ -21,7 +21,7 @@ After=network.target
 [Service]
 User=nbc-ussd
 Group=nbc-ussd
-ExecStart=/usr/bin/java -jar /opt/NbcUSSD/instance_3/mobiAd-0.0.1-SNAPSHOT.jar
+ExecStart=/usr/bin/java -jar /opt/NbcUSSD/instance_4/mobiAd-0.0.1-SNAPSHOT.jar
 SuccessExitStatus=143
 Restart=on-failure
 RestartSec=10
@@ -56,6 +56,7 @@ upstream springboot_backend {
     server 127.0.0.1:8081 max_fails=3 fail_timeout=30s;
     server 127.0.0.1:8082 max_fails=3 fail_timeout=30s;
     server 127.0.0.1:8083 max_fails=3 fail_timeout=30s;
+    server 127.0.0.1:8084 max_fails=3 fail_timeout=30s;
 }
 
 server {
@@ -120,3 +121,6 @@ docker exec -it mysql-container mysql -uroot -pArushaDB2025World
 DB User
 -> CREATE USER 'bamba'@'%' IDENTIFIED BY 'crystalClearDBPwd';
 -> GRANT ALL PRIVILEGES ON my_database.* TO 'bamba'@'%';
+
+NB:::
+New Instance For Testing Runs in Port 8084.. Later I can also push and use it for prod.
