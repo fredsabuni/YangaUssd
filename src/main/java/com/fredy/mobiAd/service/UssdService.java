@@ -25,15 +25,21 @@ import java.util.stream.IntStream;
 @Service
 public class UssdService {
     private static final Logger log = LoggerFactory.getLogger(UssdService.class);
-    private static final Long DYNAMIC_MENU_ID = 2L;
+    private static final Long DYNAMIC_MENU_ID = 4L;
+    private static final Long PARTNER_MENU_ID = 2L;
+    private static final Long CHOOSE_NEWS_MENU_ID = 3L;
     private static final Long NEXT_MENU_ID = 3L;
-    private static final Long DYNAMIC_PLAN_MENU_ID = 3L;
+    private static final Long DYNAMIC_PLAN_MENU_ID = 5L;
     private static final Long NEXT_MENU_PLAN_ID = 4L;
-    private static final String TEAM_INPUT = "1*1";
-    private static final String PLAN_INPUT = "1*2";
+    private static final Long CHOOSE_VOTE_MENU_ID = 6L;
+    private static final Long VOTE_PLAN_MENU_ID = 7L;
+    private static final String TEAM_INPUT = "1*1*1";
+    private static final String GENERIC_NEWS_INPUT = "1*1*2";
 
-//    private static final String FETCH_GOALS_INPUT = "1*1*2";
+    private static final String FIRST_GOAL_INPUT = "2*1*1";
+    private static final String FIRST_WIN_INPUT = "2*1*2";
 //    private static final String FETCH_GOALS_INPUT_1 = "1*2*2";
+
 
     private Map<String, List<MenuItem>> cache = new ConcurrentHashMap<>();
 
@@ -52,8 +58,8 @@ public class UssdService {
     @Autowired
     private ExternalApiService externalApiService;
 
-    private static final Long DYNAMIC_CONTEST_MENU_ID = 6L; // Assuming menu ID for contests
-    private static final Long DYNAMIC_CONTESTANT_MENU_ID = 7L; // Assuming menu ID for contestants
+    private static final Long DYNAMIC_CONTEST_MENU_ID = 6L; //  menu ID for contests
+    private static final Long DYNAMIC_CONTESTANT_MENU_ID = 7L; //  menu ID for contestants
 
     public String handleUssdRequest(String sessionId, String phoneNumber, String text) {
         String response;
@@ -72,7 +78,7 @@ public class UssdService {
         Menu menu = menuRepository.findById(menuId).orElseThrow(() -> new IllegalArgumentException("Invalid menu ID: " + menuId));
         List<MenuItem> menuItems = menuItemRepository.findByMenu_Id(menuId);
 
-        StringBuilder response = new StringBuilder("CON ").append(menu.getText()).append("\n");
+        StringBuilder response = new StringBuilder("").append(menu.getText()).append("\n");
         for (MenuItem item : menuItems) {
             response.append(item.getText()).append("\n");
         }
@@ -87,7 +93,7 @@ public class UssdService {
                 .filter(item -> dynamicType.equals(item.getDynamicType()))
                 .toList();
 
-        StringBuilder response = new StringBuilder("CON ").append(menu.getText()).append("\n");
+        StringBuilder response = new StringBuilder("").append(menu.getText()).append("\n");
         for (MenuItem item : menuItems) {
             response.append(item.getText()).append("\n");
         }
@@ -103,71 +109,97 @@ public class UssdService {
         // Determine the current menu ID based on inputs (for vote unit)
         menuId = determineCurrentMenuId(inputs);
 
-        if (inputs.length == 1 && inputs[0].equals("1")) {
-            Long nextMenuId = 4L; // Replace with dynamic fetching if needed
-            return generateMenuResponse(nextMenuId);
+        // Handle the "1" path (News-related options)
+        if (inputs.length >= 1 && inputs[0].equals("1")) {
+            if (inputs.length == 1) {
+                // Input: "1" - Show partner menu
+                return generateMenuResponse(PARTNER_MENU_ID);
+            }
+
+            if (inputs.length == 2) {
+                // Input: "1*1" or "1*2" - Show news type selection
+                return generateMenuResponse(CHOOSE_NEWS_MENU_ID);
+            }
+
+            // Handle Team News Path: "1*1*1"
+            if (combinedInputs.startsWith(TEAM_INPUT)) {
+                if (combinedInputs.equals(TEAM_INPUT)) {
+                    // Input: "1*1*1" - Fetch clubs and show team selection
+                    fetchAndCacheClubs();
+                    return generateDynamicMenuResponse(DYNAMIC_MENU_ID, "CLUB");
+                }
+                if (inputs.length == 4) {
+                    // Input: "1*1*1*X" - Fetch plans after team selection
+                    fetchAndCachePlans();
+                    return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
+                }
+                if (inputs.length == 5) {
+                    // Input: "1*1*1*X*Y" - Handle team news subscription
+                    return handleNews(phoneNumber, inputs, "Team");
+                }
+            }
+
+            // Handle Generic News Path: "1*1*2"
+            if (combinedInputs.startsWith(GENERIC_NEWS_INPUT)) {
+                if (combinedInputs.equals(GENERIC_NEWS_INPUT)) {
+                    // Input: "1*1*2" - Fetch plans for generic news
+                    fetchAndCachePlans();
+                    return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
+                }
+                if (inputs.length == 4) {
+                    // Input: "1*1*2*X" - Handle generic news subscription
+                    return handleNews(phoneNumber, inputs, "Generic");
+                }
+            }
         }
 
-        // Handle Generic News selection
-        if (combinedInputs.startsWith(TEAM_INPUT)) {
-            // If the input is exactly "1*1", fetch clubs (team news)
-            if (combinedInputs.equals(TEAM_INPUT)) {
-                fetchAndCacheClubs();
-                return generateDynamicMenuResponse(DYNAMIC_MENU_ID, "CLUB");
+        // Handle the "2" path (Vote-related options)
+        if (inputs.length >= 1 && inputs[0].equals("2")) {
+            if (inputs.length == 1) {
+                // Input: "1" - Show partner menu
+                return generateMenuResponse(PARTNER_MENU_ID);
             }
 
-            // After selecting a team (e.g., 1*1*3), fetch and display plans
-            if (inputs.length == 3 && inputs[0].equals("1")) {
-                fetchAndCachePlans();
-                return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
+            if (inputs.length == 2) {
+                // Input: "2*1" or "2*2" or "2*3" - Show news type selection
+                return generateMenuResponse(CHOOSE_VOTE_MENU_ID);
             }
 
-            // Once a plan is selected, handle the news subscription (input length == 4)
-            if (inputs.length == 4 && inputs[0].equals("1")) {
-                return handleNews(phoneNumber, inputs, "Generic");
+            if (inputs.length == 3 && (combinedInputs.equals(FIRST_GOAL_INPUT) || combinedInputs.equals(FIRST_WIN_INPUT))) {
+                // Input: "2*2*1" or "2*2*2" - Show news type selection
+                return generateMenuResponse(VOTE_PLAN_MENU_ID);
             }
+
         }
 
         // Handle the case where the input length is 1 (Voting)
-        if (inputs.length == 1 && inputs[0].equals("2")) {
-            fetchAndCacheContests();
-            return generateDynamicMenuResponse(DYNAMIC_CONTEST_MENU_ID, "CONTEST");
-        }
+//        if (inputs.length == 1 && inputs[0].equals("2")) {
+//            fetchAndCacheContests();
+//            return generateDynamicMenuResponse(DYNAMIC_CONTEST_MENU_ID, "CONTEST");
+//        }
 
         // Handle contests and contestants
-        if (inputs.length == 2 && inputs[0].equals("2")) {
-            Long contestId = determineContestId(inputs[1]);
-            fetchAndCacheContestants(contestId);
-            return generateDynamicMenuResponse(DYNAMIC_CONTESTANT_MENU_ID, "CONTESTANT");
-        }
+//        if (inputs.length == 2 && inputs[0].equals("2")) {
+//            Long contestId = determineContestId(inputs[1]);
+//            fetchAndCacheContestants(contestId);
+//            return generateDynamicMenuResponse(DYNAMIC_CONTESTANT_MENU_ID, "CONTESTANT");
+//        }
 
         //Trigger Voting
-        if (inputs.length == 4 && inputs[0].equals("2")) {
-            return handleVote(phoneNumber, inputs);
-        }
+//        if (inputs.length == 4 && inputs[0].equals("2")) {
+//            return handleVote(phoneNumber, inputs);
+//        }
 
-        // Handle Plan selection independently (if needed)
-        if (combinedInputs.startsWith(PLAN_INPUT)) {
-            // If the input is exactly "1*2", fetch plans
-            if (combinedInputs.equals(PLAN_INPUT)) {
-                fetchAndCachePlans();
-                return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
-            }
 
-            // Handle the case where the input length is 3 (selection of plan)
-            if (inputs.length == 3 && inputs[0].equals("1")) {
-                return handleNews(phoneNumber, inputs, "Team"); // Handle plan selection and payment
-            }
-        }
 
         // Handle Plan selection For Voting
-        if(inputs.length == 3 && (inputs[0] + "*" + inputs[1]).equals("2*1")){
-            fetchAndCachePlans();
-            return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN"); 
-        } else if (inputs.length == 3 && (inputs[0] + "*" + inputs[1]).equals("2*2")) {
-            fetchAndCachePlans();
-            return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
-        }
+//        if(inputs.length == 3 && (inputs[0] + "*" + inputs[1]).equals("2*1")){
+//            fetchAndCachePlans();
+//            return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
+//        } else if (inputs.length == 3 && (inputs[0] + "*" + inputs[1]).equals("2*2")) {
+//            fetchAndCachePlans();
+//            return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
+//        }
 
 
         // Default flow control for navigating menus
@@ -182,10 +214,10 @@ public class UssdService {
                 if (menuItem.getNextMenuId() != null) {
                     menuId = menuItem.getNextMenuId();
                 } else {
-                    return "END Asante kwa majibu yako.";
+                    return "Asante kwa Majibu Yako.";
                 }
             } else {
-                return "END Chaguo sio sahihi. Tafadhali jaribu tena.";
+                return "Chaguo sio Sahihi. Tafadhali Jaribu Tena.";
             }
         }
 
@@ -261,36 +293,58 @@ public class UssdService {
 
     private void fetchAndCacheClubs() {
         try {
-            List<MenuItem> existingClubs = menuItemRepository.findByDynamicType("CLUB");
-            if (!existingClubs.isEmpty()) {
-                menuItemRepository.deleteByDynamicType("CLUB");
-            }
             List<Club> clubs = externalApiService.fetchAndCacheClubs();
+            if (clubs == null || clubs.isEmpty()) {
+                log.warn("No clubs available to cache");
+                return;
+            }
 
-            List<MenuItem> clubMenuItems = IntStream.range(0, clubs.size())
-                    .mapToObj(i -> convertToMenuItem(clubs.get(i), "CLUB", i + 1))
-                    .collect(Collectors.toList());
-            menuItemRepository.saveAll(clubMenuItems);
-        }catch (Exception e){
-            e.printStackTrace();
+            List<MenuItem> existingClubs = menuItemRepository.findByDynamicType("CLUB");
+
+            //Check for Mismatch between existingClub Fetched and one locally
+            if (existingClubs.isEmpty() || existingClubs.size() != clubs.size()) {
+                log.info("CLUB MenuItems missing or count mismatch (existing: {}, new: {}), updating...",
+                        existingClubs.size(), clubs.size());
+                if (!existingClubs.isEmpty()) {
+                    menuItemRepository.deleteByDynamicType("CLUB");
+                }
+                List<MenuItem> clubMenuItems = IntStream.range(0, clubs.size())
+                        .mapToObj(i -> convertToMenuItem(clubs.get(i), "CLUB", i + 1))
+                        .collect(Collectors.toList());
+                menuItemRepository.saveAll(clubMenuItems);
+                log.info("Cached {} clubs as MenuItems", clubMenuItems.size());
+            } else {
+                log.info("CLUB MenuItems already exist and match count ({}), skipping update", existingClubs.size());
+            }
+        } catch (Exception e) {
+            log.error("Error fetching and caching clubs", e);
         }
-
     }
 
     private void fetchAndCachePlans() {
         try {
-            List<MenuItem> existingPlans = menuItemRepository.findByDynamicType("PLAN");
-            if (!existingPlans.isEmpty()) {
-                menuItemRepository.deleteByDynamicType("PLAN");
-            }
             List<Plan> plans = externalApiService.fetchAndCachePlans();
+            if (plans == null || plans.isEmpty()) {
+                log.warn("No plans available to cache");
+                return;
+            }
 
-            List<MenuItem> planMenuItems = IntStream.range(0, plans.size())
-                    .mapToObj(i -> convertToMenuItem(plans.get(i), "PLAN", i + 1))
-                    .collect(Collectors.toList());
-            menuItemRepository.saveAll(planMenuItems);
-        }catch (Exception e){
-            e.printStackTrace();
+            List<MenuItem> existingPlans = menuItemRepository.findByDynamicType("PLAN");
+
+            // Only delete and insert if there are no existing plans
+            if (existingPlans.isEmpty()) {
+                log.info("No existing PLAN MenuItems found, creating new ones");
+                List<MenuItem> planMenuItems = IntStream.range(0, plans.size())
+                        .mapToObj(i -> convertToMenuItem(plans.get(i), "PLAN", i + 1))
+                        .collect(Collectors.toList());
+                menuItemRepository.saveAll(planMenuItems);
+                log.info("Cached {} plans as MenuItems", planMenuItems.size());
+            } else {
+                log.info("PLAN MenuItems already exist, skipping update ({} plans found)", existingPlans.size());
+                // Optional: Add a change detection mechanism here (see below)
+            }
+        } catch (Exception e) {
+            log.error("Error fetching and caching plans", e);
         }
 
     }
@@ -306,12 +360,12 @@ public class UssdService {
             // Retrieve contestant details from the dynamic menu
             List<MenuItem> contestantMenuItems = menuItemRepository.findByDynamicType("CONTESTANT");
             if (contestantMenuItems.isEmpty()) {
-                return "END No contestants available.";
+                return "Hakuna Washiriki Waliopo.";
             }
 
             // Validate contestant index
             if (selectedContestantIndex <= 0 || selectedContestantIndex > contestantMenuItems.size()) {
-                return "END Invalid contestant selection. Please try again.";
+                return "Uteuzi wa Mshiriki si Sahihi. Tafadhali Jaribu Tena.";
             }
 
             MenuItem selectedContestantMenuItem = contestantMenuItems.get(selectedContestantIndex - 1);
@@ -333,7 +387,7 @@ public class UssdService {
                     .orElse(null);
 
             if (currentItem == null) {
-                return "END Chaguo sio sahihi. Tafadhali jaribu tena.";
+                return "Chaguo sio sahihi. Tafadhali Jaribu Tena.";
             }
             Long amount = currentItem.getAmount();
             // Log the details for debugging
@@ -350,14 +404,14 @@ public class UssdService {
             VoteResponseDTO voteResponse = externalApiService.submitVote(voteRequest);
 
             if (voteResponse != null && voteResponse.getRespCode() == 2000) {
-                return "END Your vote has been submitted successfully!";
+                return "Kura yako Imefanikiwa Kuwasilishwa!";
             } else {
-                return "END Failed to submit your vote. Please try again later.";
+                return "Kura Yako imeshindwa Kuwasilishwa. Tafadhali jaribu tena baadaye.";
             }
 
         } catch (Exception e) {
             log.error("Error handling vote: ", e);
-            return "END An error occurred while processing your vote. Please try again later.";
+            return "Kura yako imeshindwa kuwasilishwa. Tafadhali jaribu tena baadaye.";
         }
     }
 
@@ -495,14 +549,14 @@ public class UssdService {
         log.info("Received payment response: {}", paymentResponseDTO);
 
         if (paymentResponseDTO.isSuccess()) {
-            return "END Complete the transaction to vote!";
+            return "Kamilisha muamala ili kupiga Kura!";
         } else {
         // return "END Failed to record your vote. " + paymentResponseDTO.getMessage();
-            return "END Kura yako haijarekodi . ";
+            return "Kura yako haijarekodi . ";
             }
         }   catch (Exception e) {
                 log.error("Error handling vote", e);
-                return "END Kupiga kura kumeshindikana.";
+                return "Kupiga kura kumeshindikana.";
         }
     }
 
@@ -557,14 +611,14 @@ public class UssdService {
             SubscriptionResponseDTO subscriptionResponseDTO = externalApiService.news(requestDTO);
 
             if (subscriptionResponseDTO.getRespCode() == 2000) {
-                return "END Kamilisha muamala ili kujiunga!";
+                return "Kamilisha muamala ili Kujiunga!";
             } else {
-                return "END Umeshindwa kujiunga kwa sasa.";
+                return "Umeshindwa kujiunga kwa Sasa.";
             }
 
         } catch (Exception e) {
             log.error("Error handling news subscription", e);
-            return "END Umeshindwa kujiunga kwa sasa.";
+            return "Umeshindwa kujiunga kwa Sasa.";
         }
     }
 
