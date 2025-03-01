@@ -12,17 +12,20 @@ jobs:
       matrix:
         include:
           - instance: instance_4
-            ip: 62.84.183.71 
+            ip: 62.84.183.71
             port: 8084
             service: nbc_4
+            deploy_path: /opt/NbcUSSD/instance_4/
           # - instance: instance2
-          #   ip: 62.84.183.71 
+          #   ip: 192.168.1.102
           #   port: 8082
           #   service: service2
+          #   deploy_path: /opt/NbcUSSD/instance_2/
           # - instance: instance3
-          #   ip: 62.84.183.71 
+          #   ip: 192.168.1.103
           #   port: 8083
           #   service: service3
+          #   deploy_path: /opt/NbcUSSD/instance_3/
 
     steps:
       - name: Checkout code
@@ -42,15 +45,22 @@ jobs:
         run: |
           sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }} << 'EOF'
             echo 'Pulling latest code...'
-            cd /opt/BambaRepo &&
-            git pull origin main
+            cd /opt/BambaRepo || exit 1
+            git reset --hard  # Ensures clean repo state
+            git pull origin main || exit 1
 
             echo 'Updating server.port in application.properties...'
             sed -i 's/^server\.port=.*/server.port=${{ matrix.port }}/' src/main/resources/application.properties
 
             echo 'Building application...'
-            ./mvnw clean install -DskipTests
+            ./mvnw clean package -DskipTests || exit 1
+
+            echo 'Removing old JAR file (if exists)...'
+            rm -f ${{ matrix.deploy_path }}/mobiAd-0.0.1-SNAPSHOT.jar || exit 1
+
+            echo 'Copying new JAR file to ${{ matrix.deploy_path }}...'
+            cp target/mobiAd-0.0.1-SNAPSHOT.jar ${{ matrix.deploy_path }} || exit 1
 
             echo 'Restarting service ${{ matrix.service }} with port ${{ matrix.port }}...'
-            sudo systemctl start ${{ matrix.service }}
+            sudo systemctl restart ${{ matrix.service }} || exit 1
           EOF
