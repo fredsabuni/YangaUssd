@@ -58,7 +58,7 @@ jobs:
           send "mvn clean package -DskipTests || exit 1\r"
           expect "$ "
 
-          send "echo 'Removing old JAR file (if exists)...'\r"
+          send "echo 'Remove old JAR file (if exists)...'\r"
           send "rm -f ${{ matrix.deploy_path }}/mobiAd-0.0.1-SNAPSHOT.jar || exit 1\r"
           expect "$ "
 
