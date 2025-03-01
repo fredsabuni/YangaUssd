@@ -16,51 +16,52 @@ jobs:
             port: 8084
             service: nbc_4
             deploy_path: /opt/NbcUSSD/instance_4/
-          # - instance: instance2
-          #   ip: 192.168.1.102
-          #   port: 8082
-          #   service: service2
-          #   deploy_path: /opt/NbcUSSD/instance_2/
-          # - instance: instance3
-          #   ip: 192.168.1.103
-          #   port: 8083
-          #   service: service3
-          #   deploy_path: /opt/NbcUSSD/instance_3/
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install sshpass
-        run: sudo apt-get update && sudo apt-get install -y sshpass
+      - name: Install expect
+        run: sudo apt-get update && sudo apt-get install -y expect
 
-      - name: Stop Spring Boot service on ${{ matrix.instance }}
+      - name: Deploy and Restart Spring Boot Application on ${{ matrix.instance }}
         run: |
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }} "
-            echo 'Stopping service: ${{ matrix.service }}' &&
-            sudo systemctl stop ${{ matrix.service }}
-          "
+          expect <<EOF
+          spawn ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }}
+          expect "password:"
+          send "${{ secrets.SSH_PASSWORD }}\r"
+          expect "$ "
 
-      - name: Deploy and restart Spring Boot application on ${{ matrix.instance }}
-        run: |
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }} << 'EOF'
-            echo 'Pulling latest code...'
-            cd /opt/BambaRepo || exit 1
-            git reset --hard  # Ensures clean repo state
-            git pull origin main || exit 1
+          send "echo 'Stopping service: ${{ matrix.service }}'\r"
+          send "sudo systemctl stop ${{ matrix.service }}\r"
+          expect "$ "
 
-            echo 'Updating server.port in application.properties...'
-            sed -i 's/^server\.port=.*/server.port=${{ matrix.port }}/' src/main/resources/application.properties
+          send "echo 'Pulling latest code...'\r"
+          send "cd /opt/BambaRepo || exit 1\r"
+          send "git reset --hard\r"
+          send "git pull origin main || exit 1\r"
+          expect "$ "
 
-            echo 'Building application...'
-            ./mvnw clean package -DskipTests || exit 1
+          send "echo 'Updating server.port in application.properties...'\r"
+          send "sed -i 's/^server\\.port=.*/server.port=${{ matrix.port }}/' src/main/resources/application.properties\r"
+          expect "$ "
 
-            echo 'Removing Existing JAR file (if exists)...'
-            rm -f ${{ matrix.deploy_path }}/mobiAd-0.0.1-SNAPSHOT.jar || exit 1
+          send "echo 'Building application...'\r"
+          send "./mvnw clean package -DskipTests || exit 1\r"
+          expect "$ "
 
-            echo 'Copying new JAR file to ${{ matrix.deploy_path }}...'
-            cp target/mobiAd-0.0.1-SNAPSHOT.jar ${{ matrix.deploy_path }} || exit 1
+          send "echo 'Removing old JAR file (if exists)...'\r"
+          send "rm -f ${{ matrix.deploy_path }}/mobiAd-0.0.1-SNAPSHOT.jar || exit 1\r"
+          expect "$ "
 
-            echo 'Restarting service ${{ matrix.service }} with port ${{ matrix.port }}...'
-            sudo systemctl restart ${{ matrix.service }} || exit 1
+          send "echo 'Copying new JAR file to ${{ matrix.deploy_path }}...'\r"
+          send "cp target/mobiAd-0.0.1-SNAPSHOT.jar ${{ matrix.deploy_path }} || exit 1\r"
+          expect "$ "
+
+          send "echo 'Restarting service ${{ matrix.service }} with port ${{ matrix.port }}...'\r"
+          send "sudo systemctl restart ${{ matrix.service }} || exit 1\r"
+          expect "$ "
+
+          send "exit\r"
+          expect eof
           EOF
