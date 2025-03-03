@@ -39,7 +39,7 @@ jobs:
             git reset --hard origin/main
 
             echo "🔧 Updating application.properties..."
-            sed -i 's/^server\\.port=.*/server.port=${{ matrix.port }}/' src/main/resources/application.properties
+            sed -i "s/^server\.port=.*/server.port=${{ matrix.port }}/" src/main/resources/application.properties
 
             echo "⚙️ Building application..."
             mvn clean package -DskipTests
