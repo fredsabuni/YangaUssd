@@ -34,7 +34,7 @@ jobs:
       - name: Pull latest code
         run: |
           echo "📁 Navigating to repository directory: /opt/BambaRepo"
-          cd /opt/BambaRepo/
+          cd /opt/BambaRepo
 
           echo "🛠 Checking for stale Git processes..."
           if [ -f /opt/BambaRepo/.git/index.lock ]; then
