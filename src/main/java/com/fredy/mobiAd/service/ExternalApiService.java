@@ -3,10 +3,8 @@ package com.fredy.mobiAd.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fredy.mobiAd.dto.*;
 import com.fredy.mobiAd.model.*;
-import com.fredy.mobiAd.repository.ClubRepository;
-import com.fredy.mobiAd.repository.ContestantRepository;
-import com.fredy.mobiAd.repository.PlanRepository;
-import com.fredy.mobiAd.repository.PlayerRepository;
+import com.fredy.mobiAd.repository.*;
+import jakarta.servlet.http.Part;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +37,13 @@ public class ExternalApiService {
     private ContestantRepository contestantRepository;
 
     @Autowired
+    private ContestRepository contestRepository;
+
+    @Autowired
     private ClubRepository clubRepository;
+
+    @Autowired
+    private PartnerRepository partnerRepository;
 
     @Value("${vote.base.url}")
     private String voteBaseUrl;
@@ -63,9 +67,36 @@ public class ExternalApiService {
         return null;
     }
 
+
+    @Transactional
+    @Cacheable("partners")
+    public List<Partner> fetchAndCachePartners() {
+        List<Partner> partnersFromDb = partnerRepository.findAll();
+        if (!partnersFromDb.isEmpty()) {
+            log.info("Returning clubs from database: {} partners found", partnersFromDb.size());
+            return partnersFromDb; // Cached by @Cacheable
+        }
+
+        String url = voteBaseUrl + "/api/v1/voting/partners";
+        PartnerResponseDTO response = restTemplate.getForObject(url, PartnerResponseDTO.class);
+
+        if (response != null && response.getRespCode() == 2000) {
+            List<PartnerDTO> dtoDTOs = response.getItems();
+            for (PartnerDTO partnerDTO : dtoDTOs) {
+                log.info("PartnerDTO: {}", partnerDTO);
+            }
+            List<Partner> partners = dtoDTOs.stream().map(this::convertToEntity).collect(Collectors.toList());
+            partnerRepository.saveAll(partners);
+
+            return partners;
+        }
+
+        return null;
+    }
+
     @Transactional
     @Cacheable("clubs")
-    public List<Club> fetchAndCacheClubs() throws IOException {
+    public List<Club> fetchAndCacheClubs(){
         List<Club> clubsFromDb = clubRepository.findAll();
         if (!clubsFromDb.isEmpty()) {
             log.info("Returning clubs from database: {} clubs found", clubsFromDb.size());
@@ -83,26 +114,6 @@ public class ExternalApiService {
             List<Club> clubs = dtoDTOs.stream().map(this::convertToEntity).collect(Collectors.toList());
             clubRepository.saveAll(clubs);
             return clubs;
-        }
-
-        return null;
-    }
-
-    public List<Plan> fetchClubsLocally() throws IOException {
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        ClassPathResource resource = new ClassPathResource("club.json");
-        PlanResponseDTO response = objectMapper.readValue(resource.getInputStream(), PlanResponseDTO.class);
-
-        if (response != null && response.isSuccess()) {
-            List<PlanDTO> plansDTOs = response.getPayload().getPlans();
-            for (PlanDTO planDTO : plansDTOs) {
-                log.info("PlanDTO: {}", planDTO);
-            }
-            List<Plan> plans = plansDTOs.stream()
-                    .map(this::convertToEntity)
-                    .collect(Collectors.toList());
-            return plans;
         }
 
         return null;
@@ -154,7 +165,15 @@ public class ExternalApiService {
         return null;
     }
 
+    @Transactional
+    @Cacheable("contests")
     public List<Contest> fetchContests() {
+        List<Contest> contestsFromDb = contestRepository.findAll();
+        if (!contestsFromDb.isEmpty()) {
+            log.info("Returning contest from database: {} contest found", contestsFromDb.size());
+            return contestsFromDb; // Cached by @Cacheable
+        }
+
         String url = voteBaseUrl + "/api/v1/voting/contests";
         ContestResponseDTO response = restTemplate.getForObject(url, ContestResponseDTO.class);
 
@@ -163,10 +182,12 @@ public class ExternalApiService {
                 Contest contest = new Contest();
                 contest.setId(dto.getId());
                 contest.setName(dto.getName());
+                contest.setVotingCode(dto.getVotingCode());
                 contest.setStatus(dto.getStatus());
                 return contest;
             }).collect(Collectors.toList());
         }
+
 
         return List.of();
     }
@@ -174,6 +195,11 @@ public class ExternalApiService {
     @Transactional
     public List<Contestant> fetchContestants(Long contestId) {
         try {
+            List<Contestant> contestantsFromDb = contestantRepository.findAll();
+            if (!contestantsFromDb.isEmpty()) {
+                log.info("Returning contestants from database: {} contestants found", contestantsFromDb.size());
+                return contestantsFromDb; // Cached by @Cacheable
+            }
 
             // Fetch existing contestants for the given contestId and delete them
             List<Contestant> existingContestants = contestantRepository.findByContestId(contestId);
@@ -200,18 +226,6 @@ public class ExternalApiService {
             } else {
                 log.warn("No contestants found for contestId: {}", contestId);
             }
-
-//            if (response != null && response.getRespCode() == 2000) {
-//                return response.getItems().stream().map(dto -> {
-//                    Contestant contestant = new Contestant();
-//                    contestant.setId(dto.getId());
-//                    contestant.setName(dto.getName());
-//                    contestant.setClub(dto.getClub());
-//                    contestant.setVotingCode(dto.getVotingCode());
-//                    contestant.setContestId(dto.getContestId());
-//                    return contestant;
-//                }).collect(Collectors.toList());
-//            }
         } catch (Exception e) {
             log.error("Error fetching contestants for contestId: {}", contestId, e);
         }
@@ -277,6 +291,14 @@ public class ExternalApiService {
         club.setCreatedAt(clubDTO.getCreated_at());
         club.setUpdatedAt(clubDTO.getUpdated_at());
         return club;
+    }
+
+
+    private Partner convertToEntity(PartnerDTO partnerDTO) {
+        Partner partner = new Partner();
+        partner.setName(partnerDTO.getName());
+        partner.setCode(partnerDTO.getCode());
+        return partner;
     }
 
     private Plan convertToEntity(PlanDTO planDTO) {
