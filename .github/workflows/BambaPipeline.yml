@@ -16,11 +16,11 @@ jobs:
           #   port: 8083
           #   service: nbc_3
           #   deploy_path: /opt/NbcUSSD/instance_3
-          - instance: instance_2
-            ip: 62.84.183.71
-            port: 8082
-            service: nbc_2
-            deploy_path: /opt/NbcUSSD/instance_2
+          # - instance: instance_2
+          #   ip: 62.84.183.71
+          #   port: 8082
+          #   service: nbc_2
+          #   deploy_path: /opt/NbcUSSD/instance_2
           - instance: instance_1
             ip: 62.84.183.71
             port: 8081
