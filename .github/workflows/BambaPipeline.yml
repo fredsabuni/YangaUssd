@@ -20,7 +20,7 @@ jobs:
             ip: 62.84.183.71
             port: 8083
             service: nbc_3
-            deploy_path: /opt/NbcUSSD/instance_3/
+            deploy_path: /opt/NbcUSSD/instance_3
 
     steps:
       - name: Checkout code
@@ -67,7 +67,7 @@ jobs:
           expect "$ "
 
           send "echo 'Restarting service ${{ matrix.service }} with port ${{ matrix.port }}...'\r"
-          send "sudo systemctl restart ${{ matrix.service }} || exit 1\r"
+          send "sudo systemctl start ${{ matrix.service }} || exit 1\r"
           expect "$ "
 
           send "exit\r"
