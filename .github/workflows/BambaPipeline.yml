@@ -11,73 +11,60 @@ jobs:
     strategy:
       matrix:
         include:
+          # - instance: instance_3
+          #   ip: 62.84.183.71
+          #   port: 8083
+          #   service: nbc_3
+          #   deploy_path: /opt/NbcUSSD/instance_3
+          # - instance: instance_2
+          #   ip: 62.84.183.71
+          #   port: 8082
+          #   service: nbc_2
+          #   deploy_path: /opt/NbcUSSD/instance_2
           - instance: instance_1
             ip: 62.84.183.71
             port: 8081
             service: nbc_1
             deploy_path: /opt/NbcUSSD/instance_1
-          - instance: instance_2
-            ip: 62.84.183.71
-            port: 8082
-            service: nbc_2
-            deploy_path: /opt/NbcUSSD/instance_2
-          - instance: instance_3
-            ip: 62.84.183.71
-            port: 8083
-            service: nbc_3
-            deploy_path: /opt/NbcUSSD/instance_3
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Pull latest code
-        run: |
-          echo "📁 Navigating to repository directory: /opt/BambaRepo"
-          cd /opt/BambaRepo
-
-          echo "🛠 Checking for stale Git processes..."
-          if [ -f /opt/BambaRepo/.git/index.lock ]; then
-            echo "⚠️ Lock file detected! Removing..."
-            rm -f /opt/BambaRepo/.git/index.lock
-          fi
-
-          if [ -f /opt/BambaRepo/.git/HEAD.lock ]; then
-            echo "⚠️ HEAD lock file detected! Removing..."
-            rm -f /opt/BambaRepo/.git/HEAD.lock
-          fi
-
-          echo "🛠 Ensuring no running Git processes..."
-          pkill -f git || true
-
-          echo "🛠 Pulling latest code..."
-          git fetch origin main
-          git reset --hard origin/main
-
       - name: Deploy & Restart Spring Boot Application on ${{ matrix.instance }}
         run: |
           echo "🚀 Starting deployment on ${{ matrix.instance }}..."
-
           sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }} << 'EOF'
-            set -e # Stop execution on error
-
+            set -e  # Stop execution on error
             echo "🔄 Stopping service: ${{ matrix.service }}"
             sudo systemctl stop ${{ matrix.service }}
-
+            echo "📁 Navigating to repository directory: /opt/BambaRepo"
+            cd /opt/BambaRepo
+            echo "🛠 Checking for stale Git processes..."
+            if [ -f /opt/BambaRepo/.git/index.lock ]; then
+              echo "⚠️ Lock file detected! Removing..."
+              rm -f /opt/BambaRepo/.git/index.lock
+            fi
+            
+            if [ -f /opt/BambaRepo/.git/HEAD.lock ]; then
+              echo "⚠️ HEAD lock file detected! Removing..."
+              rm -f /opt/BambaRepo/.git/HEAD.lock
+            fi
+            
+            echo "🛠 Ensuring no running Git processes..."
+            pkill -f git || true
+            echo "🛠 Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
             echo "🔧 Updating application.properties..."
             sed -i "s/^server\.port=.*/server.port=${{ matrix.port }}/" src/main/resources/application.properties
-
             echo "⚙️ Building application..."
             mvn clean package -DskipTests
-
             echo "🗑 Removing old JAR file from instance path: ${{ matrix.deploy_path }}"
             rm -f ${{ matrix.deploy_path }}/mobiAd-0.0.1-SNAPSHOT.jar
-
             echo "📂 Copying new JAR file to instance path: ${{ matrix.deploy_path }}"
             cp /opt/BambaRepo/target/mobiAd-0.0.1-SNAPSHOT.jar ${{ matrix.deploy_path }}/
-
             echo "🚀 Restarting service: ${{ matrix.service }} on port ${{ matrix.port }}"
             sudo systemctl restart ${{ matrix.service }}
-
             echo "✅ Deployment successful!"
           EOF
