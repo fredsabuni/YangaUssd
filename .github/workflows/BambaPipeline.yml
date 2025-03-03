@@ -46,7 +46,7 @@ jobs:
           # expect "$ "
 
           send "echo 'Pulling latest code...'\r"
-          # send "git reset --hard\r"
+          send "git reset --hard\r"
           send "git pull origin main || exit 1\r"
           expect "$ "
 
