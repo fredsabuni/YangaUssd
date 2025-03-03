@@ -44,6 +44,20 @@ jobs:
             echo "📁 Navigating to repository directory: /opt/BambaRepo"
             cd /opt/BambaRepo
 
+            echo "🛠 Checking for stale Git processes..."
+            if [ -f /opt/BambaRepo/.git/index.lock ]; then
+              echo "⚠️ Lock file detected! Removing..."
+              rm -f /opt/BambaRepo/.git/index.lock
+            fi
+            
+            if [ -f /opt/BambaRepo/.git/HEAD.lock ]; then
+              echo "⚠️ HEAD lock file detected! Removing..."
+              rm -f /opt/BambaRepo/.git/HEAD.lock
+            fi
+            
+            echo "🛠 Ensuring no running Git processes..."
+            pkill -f git || true
+
             echo "🛠 Pulling latest code..."
             git fetch origin main
             git reset --hard origin/main
