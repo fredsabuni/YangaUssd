@@ -11,11 +11,21 @@ jobs:
     strategy:
       matrix:
         include:
-          - instance: instance_3
+          # - instance: instance_3
+          #   ip: 62.84.183.71
+          #   port: 8083
+          #   service: nbc_3
+          #   deploy_path: /opt/NbcUSSD/instance_3
+          - instance: instance_2
             ip: 62.84.183.71
-            port: 8083
-            service: nbc_3
-            deploy_path: /opt/NbcUSSD/instance_3
+            port: 8082
+            service: nbc_2
+            deploy_path: /opt/NbcUSSD/instance_2
+          - instance: instance_1
+            ip: 62.84.183.71
+            port: 8081
+            service: nbc_1
+            deploy_path: /opt/NbcUSSD/instance_1
 
     steps:
       - name: Checkout code
