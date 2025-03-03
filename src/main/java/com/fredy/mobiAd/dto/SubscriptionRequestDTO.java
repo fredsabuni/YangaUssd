@@ -4,9 +4,17 @@ public class SubscriptionRequestDTO {
     private String topicId;
     private String subscriptionPhone;
     private String paymentPhone;
+    private String partnerCode;
     private Long amount;
     private String channel;
 
+    public String getPartnerCode() {
+        return partnerCode;
+    }
+
+    public void setPartnerCode(String partnerCode) {
+        this.partnerCode = partnerCode;
+    }
 
     public String getTopicId() {
         return topicId;

@@ -3,8 +3,18 @@ package com.fredy.mobiAd.dto;
 public class ContestDTO {
     private Long id;
     private String name;
+    private String votingCode;
     private String status;
     private String createdDate;
+
+
+    public String getVotingCode() {
+        return votingCode;
+    }
+
+    public void setVotingCode(String votingCode) {
+        this.votingCode = votingCode;
+    }
 
     // Getters and Setters
     public Long getId() {

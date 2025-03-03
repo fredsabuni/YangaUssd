@@ -8,6 +8,8 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+
 @Component
 public class CacheRefreshScheduler {
     private static final Logger log = LoggerFactory.getLogger(CacheRefreshScheduler.class);
@@ -17,9 +19,11 @@ public class CacheRefreshScheduler {
 
     @Scheduled(fixedRate = 12 * 60 * 60 * 1000) // 12 hours in milliseconds
     @CacheEvict(value = "clubs", allEntries = true)
-    public void refreshCache() {
+    public void refreshCache() throws IOException {
         externalApiService.fetchAndCachePlayers();
         externalApiService.fetchAndCacheGoals();
+        externalApiService.fetchAndCachePartners();
+        externalApiService.fetchContests();
     }
 
     @CacheEvict(value = "plans", allEntries = true)

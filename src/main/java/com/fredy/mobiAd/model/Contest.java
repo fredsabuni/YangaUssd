@@ -14,13 +14,32 @@ public class Contest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private Long contestId;
+
     private String name;
+
+    private String votingCode;
 
     private String status;
 
     @Column(name = "created_date")
     private LocalDateTime createdDate;
 
+    public String getVotingCode() {
+        return votingCode;
+    }
+
+    public void setVotingCode(String votingCode) {
+        this.votingCode = votingCode;
+    }
+
+    public Long getContestId() {
+        return contestId;
+    }
+
+    public void setContestId(Long contestId) {
+        this.contestId = contestId;
+    }
 
     public Long getId() {
         return id;

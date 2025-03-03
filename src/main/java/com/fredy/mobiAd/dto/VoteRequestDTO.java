@@ -5,6 +5,15 @@ public class VoteRequestDTO {
     private String phoneNumber;
     private String channel;
     private Long amount;
+    private String partnerCode;
+
+    public String getPartnerCode() {
+        return partnerCode;
+    }
+
+    public void setPartnerCode(String partnerCode) {
+        this.partnerCode = partnerCode;
+    }
 
     public String getContestantCode() {
         return contestantCode;

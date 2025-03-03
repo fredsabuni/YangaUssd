@@ -19,8 +19,10 @@ com/fredy/mobiAd/repository/MenuRepository.class
 com/fredy/mobiAd/util/CacheConfig.class
 com/fredy/mobiAd/dto/PlayerResponseDTO.class
 com/fredy/mobiAd/dto/PlanResponseDTO.class
+com/fredy/mobiAd/model/Partner.class
 com/fredy/mobiAd/dto/PlanResponseDTO$Payload.class
 com/fredy/mobiAd/dto/SubscriptionRequestDTO.class
+com/fredy/mobiAd/util/MenuItemParser.class
 com/fredy/mobiAd/dto/PlayerDTO.class
 com/fredy/mobiAd/repository/PlayerRepository.class
 com/fredy/mobiAd/service/MenuService.class
@@ -30,6 +32,7 @@ com/fredy/mobiAd/controller/MenuController.class
 com/fredy/mobiAd/controller/UssdController.class
 com/fredy/mobiAd/model/Menu.class
 com/fredy/mobiAd/dto/VoteResponseDTO.class
+com/fredy/mobiAd/repository/ContestRepository.class
 com/fredy/mobiAd/model/Contest.class
 com/fredy/mobiAd/model/Club.class
 com/fredy/mobiAd/dto/ContestResponseDTO.class
@@ -37,10 +40,13 @@ com/fredy/mobiAd/util/CacheRefreshScheduler.class
 com/fredy/mobiAd/dto/MenuItemDTO.class
 com/fredy/mobiAd/dto/ContestantDTO.class
 com/fredy/mobiAd/model/Player.class
+com/fredy/mobiAd/repository/PartnerRepository.class
 com/fredy/mobiAd/dto/ClubResponseDTO.class
+com/fredy/mobiAd/dto/PartnerResponseDTO.class
 com/fredy/mobiAd/controller/UssdController$SessionData.class
 com/fredy/mobiAd/repository/PlanRepository.class
 com/fredy/mobiAd/dto/PaymentRequestDTO.class
 com/fredy/mobiAd/service/MenuItemService.class
+com/fredy/mobiAd/dto/PartnerDTO.class
 com/fredy/mobiAd/dto/PlanDTO.class
 com/fredy/mobiAd/repository/MenuItemRepository.class
