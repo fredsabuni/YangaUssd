@@ -33,8 +33,15 @@ jobs:
         run: |
           expect <<EOF
           spawn ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }}
-          expect "password:"
-          send "${{ secrets.SSH_PASSWORD }}\r"
+          expect {
+              "Are you sure you want to continue connecting (yes/no/\[fingerprint\])?" {
+                  send "yes\r"
+                  exp_continue
+              }
+              "password:" {
+                  send "${{ secrets.SSH_PASSWORD }}\r"
+              }
+          }
           expect "$ "
 
           send "echo 'Stopping service: ${{ matrix.service }}'\r"
@@ -67,7 +74,7 @@ jobs:
           expect "$ "
 
           send "echo 'Restarting service ${{ matrix.service }} with port ${{ matrix.port }}...'\r"
-          send "sudo systemctl start ${{ matrix.service }} || exit 1\r"
+          send "sudo systemctl restart ${{ matrix.service }} || exit 1\r"
           expect "$ "
 
           send "exit\r"
