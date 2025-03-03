@@ -21,7 +21,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy and Restart Spring Boot Application on ${{ matrix.instance }}
+      - name: Deploy & Restart Spring Boot Application on ${{ matrix.instance }}
         run: |
           echo "🚀 Starting deployment on ${{ matrix.instance }}..."
 
