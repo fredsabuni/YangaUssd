@@ -40,8 +40,11 @@ public class UssdService {
     private static final Long LOCAL_PACKAGES_MENU_ID = 8L;
 
     //  menu ID for contestants
-    private static final String TEAM_INPUT = "1*1*1";
+    private static final String HABARI_INPUT = "1*1";
+    private static final String SPORT_NEWS_INPUT = "1*1*1";
     private static final String GENERIC_NEWS_INPUT = "1*1*2";
+    private static final String VOTE_INPUT = "1*2";
+
 
     private static final String FIRST_GOAL_INPUT = "2*1*1";
     private static final String FIRST_WIN_INPUT = "2*1*2";
@@ -71,7 +74,8 @@ public class UssdService {
     public String handleUssdRequest(String sessionId, String phoneNumber, String text) {
         String response;
         if (text == null || text.isEmpty()) {
-            response =  generateMenuResponse(1L);
+            fetchAndCacheParterns();
+            response =  generateDynamicMenuResponse(PARTNER_MENU_ID, "PARTNER");
         } else {
             String[] inputs = text.split("\\*");
             response =  navigateMenus(sessionId, phoneNumber,inputs);
@@ -95,10 +99,7 @@ public class UssdService {
 
     private String generateDynamicMenuResponse(Long menuId, String dynamicType) {
         Menu menu = menuRepository.findById(menuId).orElseThrow(() -> new IllegalArgumentException("Invalid menu ID: " + menuId));
-//        List<MenuItem> menuItems = menuItemRepository.findByMenu_Id(menuId)
-//                .stream()
-//                .filter(item -> dynamicType.equals(item.getDynamicType()))
-//                .toList();
+
         List<MenuItem> menuItems = cache.get("menuItems_" + menuId + "_" + dynamicType, k -> menuItemRepository.findByMenu_Id(menuId)
                 .stream()
                 .filter(item -> dynamicType.equals(item.getDynamicType()))
@@ -120,110 +121,50 @@ public class UssdService {
         // Determine the current menu ID based on inputs (for vote unit)
         menuId = determineCurrentMenuId(inputs);
 
-        // Handle the "1" path (News-related options)
-        if (inputs.length >= 1 && inputs[0].equals("1")) {
+        if(inputs.length >= 1 && inputs[0].equals("1")){
+
             if (inputs.length == 1) {
-                // Input: "1" - Show partner menu
-                fetchAndCacheParterns();
-                return generateDynamicMenuResponse(PARTNER_MENU_ID, "PARTNER");
+                return generateMenuResponse(menuId);
             }
 
-            if (inputs.length == 2) {
-                // Input: "1*1" or "1*2" - Show news type selection
-                return generateMenuResponse(CHOOSE_NEWS_MENU_ID);
-            }
+            // Handle News Path: "1*1"
+            if (combinedInputs.startsWith(HABARI_INPUT)) {
+                switch (inputs.length) {
+                    case 2: // "1*1"
+                        return generateMenuResponse(CHOOSE_NEWS_MENU_ID);
 
-            // Handle Team News Path: "1*1*1"
-            if (combinedInputs.startsWith(TEAM_INPUT)) {
-                if (combinedInputs.equals(TEAM_INPUT)) {
-                    // Input: "1*1*1" - Fetch clubs and show team selection
-                    fetchAndCacheClubs();
-                    return generateDynamicMenuResponse(DYNAMIC_MENU_ID, "CLUB");
-                }
-                if (inputs.length == 4) {
-                    // Input: "1*1*1*X" - Fetch plans after team selection
-                    fetchAndCachePlans();
-                    return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
-                }
-                if (inputs.length == 5) {
-                    // Input: "1*1*1*X*Y" - Handle team news subscription
-                    return handleNews(phoneNumber, inputs, "Team");
+                    case 3: // "1*1*1" or "1*1*2"
+                        if (combinedInputs.equals(SPORT_NEWS_INPUT) ||
+                                combinedInputs.equals(GENERIC_NEWS_INPUT)) {
+                            return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
+                        }
+                        break;
+
+                    case 4: // "1*1*1*X"
+                        return handleNews(phoneNumber, inputs, "Team");
                 }
             }
 
-            // Handle Generic News Path: "1*1*2"
-            if (combinedInputs.startsWith(GENERIC_NEWS_INPUT)) {
-                if (combinedInputs.equals(GENERIC_NEWS_INPUT)) {
-                    // Input: "1*1*2" - Fetch plans for generic news
-                    fetchAndCachePlans();
-                    return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
-                }
-                if (inputs.length == 4) {
-                    // Input: "1*1*2*X" - Handle generic news subscription
-                    return handleNews(phoneNumber, inputs, "Generic");
+            // Handle Vote Path: "1*2"
+            if (combinedInputs.startsWith(VOTE_INPUT)) {
+                switch (inputs.length) {
+                    case 2: // "1*2"
+                        fetchAndCacheContests();
+                        return generateDynamicMenuResponse(CHOOSE_VOTE_MENU_ID, "CONTEST");
+
+                    case 3: // "1*2*X"
+                        Long contestId = determineContestId(inputs[2]);
+                        fetchAndCacheContestants(contestId);
+                        return generateDynamicMenuResponse(VOTE_PLAN_MENU_ID, "CONTESTANT");
+
+                    case 4: // "1*2*X*X"
+                        return generateMenuResponse(LOCAL_PACKAGES_MENU_ID);
+
+                    case 5: // "1*2*X*X*X"
+                        return handleVote(phoneNumber, inputs);
                 }
             }
         }
-
-        // Handle the "2" path (Vote-related options)
-        if (inputs.length >= 1 && inputs[0].equals("2")) {
-            if (inputs.length == 1) {
-                // Input: "1" - Show partner menu
-                fetchAndCacheParterns();
-                return generateDynamicMenuResponse(PARTNER_MENU_ID, "PARTNER");
-            }
-
-            if (inputs.length == 2) {
-                // Input: "2*1" or "2*2" or "2*3" - Show news type selection
-                fetchAndCacheContests();
-                return generateDynamicMenuResponse(CHOOSE_VOTE_MENU_ID, "CONTEST");
-            }
-
-            if (inputs.length == 3) {
-                // Input: "2*2*1" or "2*2*2" - Show news type selection
-                Long contestId = determineContestId(inputs[2]);
-                fetchAndCacheContestants(contestId);
-                return generateDynamicMenuResponse(VOTE_PLAN_MENU_ID, "CONTESTANT");
-            }
-            if (inputs.length == 4) {
-                // Input: "2*2*1*1"
-                return generateMenuResponse(LOCAL_PACKAGES_MENU_ID);
-            }
-            if (inputs.length == 5){
-                return handleVote(phoneNumber, inputs);
-            }
-
-        }
-
-        // Handle the case where the input length is 1 (Voting)
-//        if (inputs.length == 1 && inputs[0].equals("2")) {
-//            fetchAndCacheContests();
-//            return generateDynamicMenuResponse(DYNAMIC_CONTEST_MENU_ID, "CONTEST");
-//        }
-
-        // Handle contests and contestants
-//        if (inputs.length == 2 && inputs[0].equals("2")) {
-//            Long contestId = determineContestId(inputs[1]);
-//            fetchAndCacheContestants(contestId);
-//            return generateDynamicMenuResponse(DYNAMIC_CONTESTANT_MENU_ID, "CONTESTANT");
-//        }
-
-        //Trigger Voting
-//        if (inputs.length == 4 && inputs[0].equals("2")) {
-//            return handleVote(phoneNumber, inputs);
-//        }
-
-
-
-        // Handle Plan selection For Voting
-//        if(inputs.length == 3 && (inputs[0] + "*" + inputs[1]).equals("2*1")){
-//            fetchAndCachePlans();
-//            return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
-//        } else if (inputs.length == 3 && (inputs[0] + "*" + inputs[1]).equals("2*2")) {
-//            fetchAndCachePlans();
-//            return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
-//        }
-
 
         // Default flow control for navigating menus
         for (String input : inputs) {
@@ -328,18 +269,6 @@ public class UssdService {
     }
 
 
-//    private void fetchAndCachePlayers() {
-//        List<MenuItem> existingPlayers = menuItemRepository.findByDynamicType("PLAYER");
-//        if (!existingPlayers.isEmpty()) {
-//            menuItemRepository.deleteByDynamicType("PLAYER");
-//        }
-//        List<Player> players = externalApiService.fetchAndCachePlayers();
-//        List<MenuItem> playerMenuItems = IntStream.range(0, players.size())
-//                .mapToObj(i -> convertToMenuItem(players.get(i), "PLAYER", i + 1))
-//                .collect(Collectors.toList());
-//        menuItemRepository.saveAll(playerMenuItems);
-//    }
-
 
     //Fetch Partners
     private void fetchAndCacheParterns(){
@@ -380,6 +309,8 @@ public class UssdService {
             log.error("Error fetching and caching partners", e);
         }
     }
+
+
 
 
 
@@ -487,10 +418,9 @@ public class UssdService {
     private String handleVote(String phoneNumber, String[] inputs) {
         try {
             // The second last input represents the contestant selection
-            int selectedContestantIndex = Integer.parseInt(inputs[inputs.length - 2]);
-            // The last input represents the plan selection
-            int selectedPlanIndex = Integer.parseInt(inputs[inputs.length - 1]);
-            int selectedPartner = Integer.parseInt(inputs[inputs.length - 3]);
+            int selectedPartner = Integer.parseInt(inputs[0]);
+            int selectedPlanIndex = Integer.parseInt(inputs[inputs.length - 2]);
+            int selectedContestantIndex = Integer.parseInt(inputs[inputs.length - 1]);
 
             // Retrieve contestant details from the dynamic menu
             List<MenuItem> contestantMenuItems = menuItemRepository.findByDynamicType("CONTESTANT");
@@ -535,10 +465,11 @@ public class UssdService {
                     .findFirst()
                     .orElse(null);
 
-            assert partnerItem != null;
+            if (partnerItem == null) {
+                return "Partner selection is invalid. Please try again.";
+            }
 
             String partnerSelected = MenuItemParser.removeNumberPrefix(partnerItem.getText());
-
 
             // Prepare the vote request
             VoteRequestDTO voteRequest = new VoteRequestDTO();

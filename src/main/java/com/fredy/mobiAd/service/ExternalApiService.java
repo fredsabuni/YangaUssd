@@ -71,12 +71,6 @@ public class ExternalApiService {
     @Transactional
     @Cacheable("partners")
     public List<Partner> fetchAndCachePartners() {
-        List<Partner> partnersFromDb = partnerRepository.findAll();
-        if (!partnersFromDb.isEmpty()) {
-            log.info("Returning clubs from database: {} partners found", partnersFromDb.size());
-            return partnersFromDb; // Cached by @Cacheable
-        }
-
         String url = voteBaseUrl + "/api/v1/voting/partners";
         PartnerResponseDTO response = restTemplate.getForObject(url, PartnerResponseDTO.class);
 
@@ -86,13 +80,25 @@ public class ExternalApiService {
                 log.info("PartnerDTO: {}", partnerDTO);
             }
             List<Partner> partners = dtoDTOs.stream().map(this::convertToEntity).collect(Collectors.toList());
-            partnerRepository.saveAll(partners);
 
-            return partners;
+            partnerRepository.deleteAll();
+            List<Partner> savedPartners = partnerRepository.saveAll(partners);
+            log.info("Saved {} partners to database", savedPartners.size());
+
+            return savedPartners;
         }
 
+        List<Partner> partnersFromDb = partnerRepository.findAll();
+        if (!partnersFromDb.isEmpty()) {
+            log.info("Returning clubs from database: {} partners found", partnersFromDb.size());
+            return partnersFromDb; // Cached by @Cacheable
+        }
+
+        log.warn("No partners available from either API or database");
         return null;
     }
+
+
 
     @Transactional
     @Cacheable("clubs")
@@ -187,8 +193,6 @@ public class ExternalApiService {
                 return contest;
             }).collect(Collectors.toList());
         }
-
-
         return List.of();
     }
 
