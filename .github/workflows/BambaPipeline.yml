@@ -1,16 +1,16 @@
-name: Bamba Pipeline
+# name: Bamba Pipeline
 
-on:
-  push:
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         include:
           # - instance: instance_3
           #   ip: 62.84.183.71
           #   port: 8083
@@ -21,23 +21,74 @@ jobs:
           #   port: 8082
           #   service: nbc_2
           #   deploy_path: /opt/NbcUSSD/instance_2
-          - instance: instance_1
-            ip: 62.84.183.71
-            port: 8081
-            service: nbc_1
-            deploy_path: /opt/NbcUSSD/instance_1
+    #       - instance: instance_1
+    #         ip: 62.84.183.71
+    #         port: 8081
+    #         service: nbc_1
+    #         deploy_path: /opt/NbcUSSD/instance_1
 
+    # steps:
+    #   - name: Checkout code
+    #     uses: actions/checkout@v3
+
+    #   - name: Deploy & Restart Spring Boot Application on ${{ matrix.instance }}
+    #     run: |
+    #       echo "🚀 Starting deployment on ${{ matrix.instance }}..."
+    #       sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }} << 'EOF'
+    #         set -e  # Stop execution on error
+    #         echo "🔄 Stopping service: ${{ matrix.service }}"
+    #         sudo systemctl stop ${{ matrix.service }}
+    #         echo "📁 Navigating to repository directory: /opt/BambaRepo"
+    #         cd /opt/BambaRepo
+    #         echo "🛠 Checking for stale Git processes..."
+    #         if [ -f /opt/BambaRepo/.git/index.lock ]; then
+    #           echo "⚠️ Lock file detected! Removing..."
+    #           rm -f /opt/BambaRepo/.git/index.lock
+    #         fi
+            
+    #         if [ -f /opt/BambaRepo/.git/HEAD.lock ]; then
+    #           echo "⚠️ HEAD lock file detected! Removing..."
+    #           rm -f /opt/BambaRepo/.git/HEAD.lock
+    #         fi
+            
+    #         echo "🛠 Ensuring no running Git processes..."
+    #         pkill -f git || true
+    #         echo "🛠 Pulling latest code..."
+    #         git fetch origin main
+    #         git reset --hard origin/main
+    #         echo "🔧 Updating application.properties..."
+    #         sed -i "s/^server\.port=.*/server.port=${{ matrix.port }}/" src/main/resources/application.properties
+    #         echo "⚙️ Building application..."
+    #         mvn clean package -DskipTests
+    #         echo "🗑 Removing old JAR file from instance path: ${{ matrix.deploy_path }}"
+    #         rm -f ${{ matrix.deploy_path }}/mobiAd-0.0.1-SNAPSHOT.jar
+    #         echo "📂 Copying new JAR file to instance path: ${{ matrix.deploy_path }}"
+    #         cp /opt/BambaRepo/target/mobiAd-0.0.1-SNAPSHOT.jar ${{ matrix.deploy_path }}/
+    #         echo "🚀 Restarting service: ${{ matrix.service }} on port ${{ matrix.port }}"
+    #         sudo systemctl restart ${{ matrix.service }}
+    #         echo "✅ Deployment successful!"
+    #       EOF
+
+
+name: Bamba Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy & Restart Spring Boot Application on ${{ matrix.instance }}
+      - name: Pull code and build once
         run: |
-          echo "🚀 Starting deployment on ${{ matrix.instance }}..."
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }} << 'EOF'
+          echo "🚀 Starting single code pull and build..."
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@62.84.183.71 << 'EOF'
             set -e  # Stop execution on error
-            echo "🔄 Stopping service: ${{ matrix.service }}"
-            sudo systemctl stop ${{ matrix.service }}
             echo "📁 Navigating to repository directory: /opt/BambaRepo"
             cd /opt/BambaRepo
             echo "🛠 Checking for stale Git processes..."
@@ -56,15 +107,51 @@ jobs:
             echo "🛠 Pulling latest code..."
             git fetch origin main
             git reset --hard origin/main
-            echo "🔧 Updating application.properties..."
-            sed -i "s/^server\.port=.*/server.port=${{ matrix.port }}/" src/main/resources/application.properties
-            echo "⚙️ Building application..."
+            echo "⚙️ Building application (without specific port yet)"
             mvn clean package -DskipTests
+            echo "✅ Code pulled and built successfully!"
+          EOF
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build  # Ensure this job runs after the build job
+    strategy:
+      matrix:
+        include:
+          - instance: instance_3
+            ip: 62.84.183.71
+            port: 8083
+            service: nbc_3
+            deploy_path: /opt/NbcUSSD/instance_3
+          - instance: instance_2
+            ip: 62.84.183.71
+            port: 8082
+            service: nbc_2
+            deploy_path: /opt/NbcUSSD/instance_2
+          - instance: instance_1
+            ip: 62.84.183.71
+            port: 8081
+            service: nbc_1
+            deploy_path: /opt/NbcUSSD/instance_1
+    steps:
+      - name: Deploy to ${{ matrix.instance }}
+        run: |
+          echo "🚀 Deploying to ${{ matrix.instance }}..."
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }} << 'EOF'
+            set -e  # Stop execution on error
+            echo "🔄 Stopping service: ${{ matrix.service }}"
+            sudo systemctl stop ${{ matrix.service }}
+            echo "📁 Navigating to repository directory: /opt/BambaRepo"
+            cd /opt/BambaRepo
+            echo "🔧 Updating application.properties for port ${{ matrix.port }}..."
+            sed -i "s/^server\.port=.*/server.port=${{ matrix.port }}/" src/main/resources/application.properties
+            echo "⚙️ Rebuilding application with updated port..."
+            mvn package -DskipTests
             echo "🗑 Removing old JAR file from instance path: ${{ matrix.deploy_path }}"
             rm -f ${{ matrix.deploy_path }}/mobiAd-0.0.1-SNAPSHOT.jar
             echo "📂 Copying new JAR file to instance path: ${{ matrix.deploy_path }}"
             cp /opt/BambaRepo/target/mobiAd-0.0.1-SNAPSHOT.jar ${{ matrix.deploy_path }}/
             echo "🚀 Restarting service: ${{ matrix.service }} on port ${{ matrix.port }}"
             sudo systemctl restart ${{ matrix.service }}
-            echo "✅ Deployment successful!"
+            echo "✅ Deployment to ${{ matrix.instance }} successful!"
           EOF
