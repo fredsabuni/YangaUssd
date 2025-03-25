@@ -8,58 +8,71 @@ on:
       - main
 
 jobs:
-  deploy:
+  deploy_instance_1:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - instance: instance_4
-            ip: 62.84.183.71
-            port: 8084
-            service: nbc_4
-            deploy_path: /opt/NbcUSSD/instance_4/
-          - instance: instance2
-            ip: 192.168.1.102
-            port: 8082
-            service: service2
-            deploy_path: /opt/NbcUSSD/instance_2/
-          - instance: instance3
-            ip: 192.168.1.103
-            port: 8083
-            service: service3
-            deploy_path: /opt/NbcUSSD/instance_3/
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install sshpass
-        run: sudo apt-get update && sudo apt-get install -y sshpass
-
-      - name: Stop Spring Boot service on ${{ matrix.instance }}
+      - name: Deploy to Instance 1
         run: |
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }} "
-            echo 'Stopping service: ${{ matrix.service }}' &&
-            sudo systemctl stop ${{ matrix.service }}
-          "
+          echo "🚀 Deploying to instance_1..."
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@62.84.183.71 << 'EOF'
+            set -e
+            echo "🔄 Stopping service nbc_1"
+            sudo systemctl stop nbc_1
 
-      - name: Deploy and restart Spring Boot application on ${{ matrix.instance }}
+            echo "📁 Navigating to /opt/BambaRepo"
+            cd /opt/BambaRepo
+
+            echo "🛠 Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "⚙️ Updating application.properties with port 8081..."
+            sed -i "s/^server\.port=.*/server.port=8081/" src/main/resources/application.properties
+
+            echo "⚙️ Building application..."
+            mvn clean package -DskipTests
+
+            echo "📂 Deploying JAR file..."
+            cp /opt/BambaRepo/target/mobiAd-0.0.1-SNAPSHOT.jar /opt/NbcUSSD/instance_1/
+
+            echo "🚀 Restarting service nbc_1"
+            sudo systemctl restart nbc_1
+          EOF
+
+  deploy_instance_2:
+    runs-on: ubuntu-latest
+    needs: deploy_instance_1  # Ensures instance_1 finishes before instance_2 starts
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Instance 2
         run: |
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ matrix.ip }} << 'EOF'
-            echo 'Pulling latest code...'
-            cd /opt/BambaRepo || exit 1
-            git reset --hard  # Ensures clean repo state
-            git pull origin main || exit 1
+          echo "🚀 Deploying to instance_2..."
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@62.84.183.71 << 'EOF'
+            set -e
+            echo "🔄 Stopping service nbc_2"
+            sudo systemctl stop nbc_2
 
-            echo 'Updating server.port in application.properties...'
-            sed -i 's/^server\.port=.*/server.port=${{ matrix.port }}/' src/main/resources/application.properties
+            echo "📁 Navigating to /opt/BambaRepo"
+            cd /opt/BambaRepo
 
-            echo 'Building application...'
-            ./mvnw clean package -DskipTests || exit 1
+            echo "🛠 Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
 
-            echo 'Copying new JAR file to ${{ matrix.deploy_path }}...'
-            cp target/mobiAd-0.0.1-SNAPSHOT.jar ${{ matrix.deploy_path }} || exit 1
+            echo "⚙️ Updating application.properties with port 8082..."
+            sed -i "s/^server\.port=.*/server.port=8082/" src/main/resources/application.properties
 
-            echo 'Restarting service ${{ matrix.service }} with port ${{ matrix.port }}...'
-            sudo systemctl restart ${{ matrix.service }} || exit 1
+            echo "⚙️ Building application..."
+            mvn clean package -DskipTests
+
+            echo "📂 Deploying JAR file..."
+            cp /opt/BambaRepo/target/mobiAd-0.0.1-SNAPSHOT.jar /opt/NbcUSSD/instance_2/
+
+            echo "🚀 Restarting service nbc_2"
+            sudo systemctl restart nbc_2
           EOF

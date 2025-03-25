@@ -17,17 +17,15 @@ public class CacheRefreshScheduler {
     @Autowired
     private ExternalApiService externalApiService;
 
-    @Scheduled(fixedRate = 12 * 60 * 60 * 1000) // 12 hours in milliseconds
-    @CacheEvict(value = "clubs", allEntries = true)
+    @Scheduled(fixedRate = 6 * 60 * 60 * 1000) // 12 hours in milliseconds
+    @CacheEvict(value = {"clubs", "plans", "partners", "contests"}, allEntries = true)
     public void refreshCache() throws IOException {
-        externalApiService.fetchAndCachePlayers();
-        externalApiService.fetchAndCacheGoals();
+        log.info("Refreshing all caches...");
+
         externalApiService.fetchAndCachePartners();
         externalApiService.fetchContests();
-    }
 
-    @CacheEvict(value = "plans", allEntries = true)
-    public void evictPlansCache() {
-        log.info("Plans cache evicted");
+        log.info("All caches (clubs, plans, partners, contests) evicted and refreshed");
+
     }
 }
