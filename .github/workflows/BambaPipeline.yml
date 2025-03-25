@@ -143,14 +143,14 @@ jobs:
             sudo systemctl stop ${{ matrix.service }}
             echo "📁 Navigating to repository directory: /opt/BambaRepo"
             cd /opt/BambaRepo
-            echo "🔧 Updating application.properties for port ${{ matrix.port }}..."
-            sed -i "s/^server\.port=.*/server.port=${{ matrix.port }}/" src/main/resources/application.properties
-            echo "⚙️ Rebuilding application with updated port..."
-            mvn package -DskipTests
             echo "🗑 Removing old JAR file from instance path: ${{ matrix.deploy_path }}"
             rm -f ${{ matrix.deploy_path }}/mobiAd-0.0.1-SNAPSHOT.jar
-            echo "📂 Copying new JAR file to instance path: ${{ matrix.deploy_path }}"
+            echo "📂 Copying pre-built JAR file to instance path: ${{ matrix.deploy_path }}"
             cp /opt/BambaRepo/target/mobiAd-0.0.1-SNAPSHOT.jar ${{ matrix.deploy_path }}/
+            echo "🔧 Configuring service to use port ${{ matrix.port }}"
+            sudo sed -i "s/ExecStart=.*/ExecStart=\/usr\/bin\/java -jar -Dserver.port=${{ matrix.port }} \/opt\/NbcUSSD\/${{ matrix.instance }}\/mobiAd-0.0.1-SNAPSHOT.jar/" /etc/systemd/system/${{ matrix.service }}.service
+            echo "🔄 Reloading systemd daemon"
+            sudo systemctl daemon-reload
             echo "🚀 Restarting service: ${{ matrix.service }} on port ${{ matrix.port }}"
             sudo systemctl restart ${{ matrix.service }}
             echo "✅ Deployment to ${{ matrix.instance }} successful!"
