@@ -5,6 +5,7 @@ import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,8 +25,6 @@ public class UssdController {
     @Autowired
     private UssdService ussdService;
 
-    // Map to store the USSD path for each session
-//    private Map<String, String> ussdPathMap = new ConcurrentHashMap<>();
 
     private final Map<String, SessionData> sessionDataMap = new ConcurrentHashMap<>(1000, 0.75f, 16);
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -48,34 +47,14 @@ public class UssdController {
 
 
     @RequestMapping(value = "/", method = {RequestMethod.GET, RequestMethod.POST})
-    public String ussdCallback(@RequestParam Map<String, String> requestParams) {
+    public ResponseEntity<String> ussdCallback(@RequestParam Map<String, String> requestParams) {
         String sessionId = requestParams.get("sessionId");
         String phoneNumber = requestParams.get("phoneNumber");
         String text = requestParams.get("text");
 
-
-        // Handle the default menu case where text is empty
-//        if (text == null || text.isEmpty()) {
-//            ussdPathMap.put(sessionId, "");
-//        } else {
-//            // Corrected path generation logic
-//            String currentPath = ussdPathMap.getOrDefault(sessionId, "");
-//            String newPath;
-//            if (currentPath.isEmpty()) {
-//                newPath = text; // For the first response, directly use the text
-//            } else {
-//                newPath = currentPath + "*" + text; // Append with asterisk for subsequent responses
-//            }
-//            ussdPathMap.put(sessionId, newPath);
-//        }
-//
-//        // Use the full path for processing
-//        String fullPath = ussdPathMap.get(sessionId);
-//        log.info("{FullPath}"+ fullPath);
-
         if (sessionId == null || phoneNumber == null) {
             log.warn("Invalid request parameters: sessionId={}, phoneNumber={}", sessionId, phoneNumber);
-            return "Vigezo vya ombi si sahihi.";
+            return ResponseEntity.badRequest().body("Vigezo vya ombi si sahihi.");
         }
 
         // Get or create session data
@@ -98,7 +77,44 @@ public class UssdController {
         // Use the full path for processing
         log.info("FullPath: {}", newPath);
 
-        return ussdService.handleUssdRequest(sessionId,phoneNumber,newPath);
+        return ussdService.handleUssdRequest(sessionId,phoneNumber,newPath,"Airtel");
+    }
+
+    // New endpoint for mixxByYas player
+    @RequestMapping(value = "/mixxByYas", method = {RequestMethod.GET, RequestMethod.POST})
+    public ResponseEntity<String> ussdCallbackMixxByYas(@RequestParam Map<String, String> requestParams) {
+        String fsession = requestParams.get("FSESSION");
+        String msisdn = requestParams.get("MSISDN");
+        String input = requestParams.get("INPUT");
+        String newRequest = requestParams.get("NEW_REQUEST");
+        String shortCode = requestParams.get("SHORT_CODE");
+
+        if (fsession == null || msisdn == null) {
+            log.warn("Invalid request parameters: fsession={}, msisdn={}", fsession, msisdn);
+            return ResponseEntity.badRequest().body("Vigezo vya ombi si sahihi.");
+        }
+
+        // Get or create session data
+        SessionData sessionData = sessionDataMap.compute(fsession, (key, existingData) -> {
+            if (existingData == null) {
+                // New session
+                return new SessionData("", System.currentTimeMillis());
+            } else {
+                // Update last activity time
+                existingData.lastActivityTime = System.currentTimeMillis();
+                return existingData;
+            }
+        });
+
+        // Handle the default menu case where input is empty
+        String currentPath = sessionData.ussdPath;
+        String newPath = input == null || input.isEmpty() ? "" : currentPath.isEmpty() ? input : currentPath + "*" + input;
+        sessionData.ussdPath = newPath;
+
+        // Use the full path for processing
+        log.info("FullPath (mixxByYas): {}", newPath);
+
+        return ussdService.handleUssdRequest(fsession, msisdn, newPath, "mixxByYas");
     }
 
 

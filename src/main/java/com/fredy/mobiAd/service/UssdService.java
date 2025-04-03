@@ -11,6 +11,8 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -71,17 +73,17 @@ public class UssdService {
             .build();
 
 
-    public String handleUssdRequest(String sessionId, String phoneNumber, String text) {
-        String response;
+    public  ResponseEntity<String> handleUssdRequest(String sessionId, String phoneNumber, String text, String player) {
+        ResponseEntity<String> response;
         if (text == null || text.isEmpty()) {
             fetchAndCacheParterns();
-            response =  generateDynamicMenuResponse(PARTNER_MENU_ID, "PARTNER");
+            response =  buildResponse(generateDynamicMenuResponse(PARTNER_MENU_ID, "PARTNER"), player, false);
         } else {
             String[] inputs = text.split("\\*");
-            response =  navigateMenus(sessionId, phoneNumber,inputs);
+            response =  navigateMenus(sessionId, phoneNumber,inputs, player);
         }
 
-        logSession(sessionId, phoneNumber, text, response);
+        logSession(sessionId, phoneNumber, text, response.getBody());
         return response;
     }
 
@@ -114,34 +116,34 @@ public class UssdService {
     }
 
 
-    private String navigateMenus(String sessionId, String phoneNumber, String[] inputs) {
+    public ResponseEntity<String> navigateMenus(String sessionId, String phoneNumber, String[] inputs, String player) {
         String combinedInputs = String.join("*", inputs);
         Long menuId = 1L; // Start with the main menu
 
         // Determine the current menu ID based on inputs (for vote unit)
         menuId = determineCurrentMenuId(inputs);
 
-        if(inputs.length >= 1 && inputs[0].equals("1")){
+        if (inputs.length >= 1 && inputs[0].equals("1")) {
 
             if (inputs.length == 1) {
-                return generateMenuResponse(menuId);
+                return buildResponse(generateMenuResponse(menuId), player, false);
             }
 
             // Handle News Path: "1*1"
             if (combinedInputs.startsWith(HABARI_INPUT)) {
                 switch (inputs.length) {
                     case 2: // "1*1"
-                        return generateMenuResponse(CHOOSE_NEWS_MENU_ID);
+                        return buildResponse(generateMenuResponse(CHOOSE_NEWS_MENU_ID), player, false);
 
                     case 3: // "1*1*1" or "1*1*2"
                         if (combinedInputs.equals(SPORT_NEWS_INPUT) ||
                                 combinedInputs.equals(GENERIC_NEWS_INPUT)) {
-                            return generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN");
+                            return buildResponse(generateDynamicMenuResponse(DYNAMIC_PLAN_MENU_ID, "PLAN"), player, false);
                         }
                         break;
 
                     case 4: // "1*1*1*X"
-                        return handleNews(phoneNumber, inputs, "Team");
+                        return buildResponse(handleNews(phoneNumber, inputs, "Team"), player, true); // FB for mixxByYas
                 }
             }
 
@@ -150,18 +152,18 @@ public class UssdService {
                 switch (inputs.length) {
                     case 2: // "1*2"
                         fetchAndCacheContests();
-                        return generateDynamicMenuResponse(CHOOSE_VOTE_MENU_ID, "CONTEST");
+                        return buildResponse(generateDynamicMenuResponse(CHOOSE_VOTE_MENU_ID, "CONTEST"), player, false);
 
                     case 3: // "1*2*X"
                         Long contestId = determineContestId(inputs[2]);
                         fetchAndCacheContestants(contestId);
-                        return generateDynamicMenuResponse(VOTE_PLAN_MENU_ID, "CONTESTANT");
+                        return buildResponse(generateDynamicMenuResponse(VOTE_PLAN_MENU_ID, "CONTESTANT"), player, false);
 
                     case 4: // "1*2*X*X"
-                        return generateMenuResponse(LOCAL_PACKAGES_MENU_ID);
+                        return buildResponse(generateMenuResponse(LOCAL_PACKAGES_MENU_ID), player, false);
 
                     case 5: // "1*2*X*X*X"
-                        return handleVote(phoneNumber, inputs);
+                        return buildResponse(handleVote(phoneNumber, inputs), player, true); // FB for mixxByYas
                 }
             }
         }
@@ -178,14 +180,24 @@ public class UssdService {
                 if (menuItem.getNextMenuId() != null) {
                     menuId = menuItem.getNextMenuId();
                 } else {
-                    return "Asante kwa Majibu Yako.";
+                    return buildResponse("Asante kwa Majibu Yako.", player, false);
                 }
             } else {
-                return "Chaguo sio Sahihi. Tafadhali Jaribu Tena.";
+                return buildResponse("Chaguo sio Sahihi. Tafadhali Jaribu Tena.", player, false);
             }
         }
 
-        return generateMenuResponse(menuId);
+        return buildResponse(generateMenuResponse(menuId), player, false);
+    }
+
+    private ResponseEntity<String> buildResponse(String responseText, String player, boolean isFinal) {
+        if ("mixxByYas".equalsIgnoreCase(player)) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Freeflow", isFinal ? "FB" : "FC"); // "FB" for final menus, "FC" otherwise
+            return ResponseEntity.ok().headers(headers).body(responseText);
+        }
+
+        return ResponseEntity.ok(responseText);
     }
 
 
