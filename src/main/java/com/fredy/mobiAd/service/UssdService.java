@@ -118,7 +118,7 @@ public class UssdService {
 
     public ResponseEntity<String> navigateMenus(String sessionId, String phoneNumber, String[] inputs, String player) {
         String combinedInputs = String.join("*", inputs);
-        Long menuId = 1L; // Start with the main menu
+        Long menuId = 1L;
 
         // Determine the current menu ID based on inputs (for vote unit)
         menuId = determineCurrentMenuId(inputs);
@@ -143,7 +143,7 @@ public class UssdService {
                         break;
 
                     case 4: // "1*1*1*X"
-                        return buildResponse(handleNews(phoneNumber, inputs, "Team"), player, true); // FB for mixxByYas
+                        return buildResponse(handleNews(phoneNumber, inputs, "Team"), player, true);
                 }
             }
 
@@ -163,7 +163,7 @@ public class UssdService {
                         return buildResponse(generateMenuResponse(LOCAL_PACKAGES_MENU_ID), player, false);
 
                     case 5: // "1*2*X*X*X"
-                        return buildResponse(handleVote(phoneNumber, inputs), player, true); // FB for mixxByYas
+                        return buildResponse(handleVote(phoneNumber, inputs), player, true);
                 }
             }
         }
@@ -180,10 +180,10 @@ public class UssdService {
                 if (menuItem.getNextMenuId() != null) {
                     menuId = menuItem.getNextMenuId();
                 } else {
-                    return buildResponse("Asante kwa Majibu Yako.", player, false);
+                    return buildResponse("Asante kwa Majibu Yako.", player, true);
                 }
             } else {
-                return buildResponse("Chaguo sio Sahihi. Tafadhali Jaribu Tena.", player, false);
+                return buildResponse("Chaguo sio Sahihi. Tafadhali Jaribu Tena.", player, true);
             }
         }
 
@@ -191,15 +191,10 @@ public class UssdService {
     }
 
     private ResponseEntity<String> buildResponse(String responseText, String player, boolean isFinal) {
-        if ("mixxByYas".equalsIgnoreCase(player)) {
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Freeflow", isFinal ? "FB" : "FC"); // "FB" for final menus, "FC" otherwise
-            return ResponseEntity.ok().headers(headers).body(responseText);
-        }
-
-        return ResponseEntity.ok(responseText);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Freeflow", isFinal ? "FB" : "FC");
+        return ResponseEntity.ok().headers(headers).body(responseText);
     }
-
 
 
     //Fetch Contestants
