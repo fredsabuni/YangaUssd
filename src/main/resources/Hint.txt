@@ -168,3 +168,5 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
+
+sudo systemctl stop nbc_3
