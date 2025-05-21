@@ -170,3 +170,6 @@ server {
 }
 
 sudo systemctl stop nbc_3
+
+connect to DB
+docker exec -it mysql-container mysql -uroot -pArushaDB2025World
