@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -27,8 +26,8 @@ public class UssdController {
 
 
     private final Map<String, SessionData> sessionDataMap = new ConcurrentHashMap<>(1000, 0.75f, 16);
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private static final long SESSION_TIMEOUT = 4 * 60 * 1000;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
+    private static final long SESSION_TIMEOUT = 5 * 60 * 1000;
 
     private static class SessionData {
         String ussdPath;
@@ -83,6 +82,8 @@ public class UssdController {
     // New endpoint for mixxByYas player
     @RequestMapping(value = "/mixxByYas", method = {RequestMethod.GET, RequestMethod.POST})
     public ResponseEntity<String> ussdCallbackMixxByYas(@RequestParam Map<String, String> requestParams) {
+        log.info("mixxByYas request params: {}", requestParams);
+
         String fsession = requestParams.get("FSESSION");
         String msisdn = requestParams.get("MSISDN");
         String input = requestParams.get("INPUT");
@@ -93,6 +94,9 @@ public class UssdController {
             log.warn("Invalid request parameters: fsession={}, msisdn={}", fsession, msisdn);
             return ResponseEntity.badRequest().body("Vigezo vya ombi si sahihi.");
         }
+
+        log.info("FSESSION: {}, MSISDN: {}, INPUT: {}, NEW_REQUEST: {}, SHORT_CODE: {}",
+                fsession, msisdn, input, newRequest, shortCode);
 
         // Get or create session data
         SessionData sessionData = sessionDataMap.compute(fsession, (key, existingData) -> {
@@ -107,8 +111,18 @@ public class UssdController {
         });
 
         // Handle the default menu case where input is empty
+        // String currentPath = sessionData.ussdPath;
+        // String newPath = input == null || input.isEmpty() ? "" : currentPath.isEmpty() ? input : currentPath + "*" + input;
+        // sessionData.ussdPath = newPath;
         String currentPath = sessionData.ussdPath;
-        String newPath = input == null || input.isEmpty() ? "" : currentPath.isEmpty() ? input : currentPath + "*" + input;
+        String newPath;
+        if (input == null || input.trim().isEmpty()) {
+            newPath = "";
+            log.info("Empty input - resetting path");
+        } else {
+            newPath = currentPath.isEmpty() ? input : currentPath + "*" + input;
+            log.info("Building path: current={}, input={}, new={}", currentPath, input, newPath);
+        }
         sessionData.ussdPath = newPath;
 
         // Use the full path for processing

@@ -126,7 +126,6 @@ NB:::
 New Instance For Testing Runs in Port 8084.. Later I can also push and use it for prod.
 
 
-
 upstream springboot_backend {
     server 127.0.0.1:8081 max_fails=3 fail_timeout=30s;
     server 127.0.0.1:8082 max_fails=3 fail_timeout=30s;
