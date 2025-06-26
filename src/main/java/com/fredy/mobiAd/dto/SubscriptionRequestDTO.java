@@ -7,6 +7,24 @@ public class SubscriptionRequestDTO {
     private String partnerCode;
     private Long amount;
     private String channel;
+    private String sourceChannel;
+    private String paymentGateway;
+
+    public String getSourceChannel() {
+        return sourceChannel;
+    }
+
+    public void setSourceChannel(String sourceChannel) {
+        this.sourceChannel = sourceChannel;
+    }
+
+    public String getPaymentGateway() {
+        return paymentGateway;
+    }
+
+    public void setPaymentGateway(String paymentGateway) {
+        this.paymentGateway = paymentGateway;
+    }
 
     public String getPartnerCode() {
         return partnerCode;

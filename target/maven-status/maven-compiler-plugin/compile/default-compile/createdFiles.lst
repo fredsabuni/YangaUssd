@@ -6,6 +6,7 @@ com/fredy/mobiAd/dto/PaymentResponseDTO.class
 com/fredy/mobiAd/repository/UserSessionLogRepository.class
 com/fredy/mobiAd/dto/ContestantResponseDTO.class
 com/fredy/mobiAd/model/Plan.class
+com/fredy/mobiAd/model/SessionData.class
 com/fredy/mobiAd/model/UserSessionLog.class
 com/fredy/mobiAd/MobiAdApplication.class
 com/fredy/mobiAd/dto/ContestDTO.class
