@@ -172,3 +172,5 @@ sudo systemctl stop nbc_3
 
 connect to DB
 docker exec -it mysql-container mysql -uroot -pArushaDB2025World
+
+redis-cli -u redis://default:c5sWeABoxIvnfaddaclYTBjfb8W7Ae0d@redis-19159.c1.us-central1-2.gce.redns.redis-cloud.com:19159

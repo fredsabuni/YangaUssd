@@ -20,8 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -143,7 +141,7 @@ public class UssdService {
                         break;
 
                     case 4: // "1*1*1*X"
-                        return buildResponse(handleNews(phoneNumber, inputs, "Team"), player, true);
+                        return buildResponse(handleNews(phoneNumber, inputs, "Team", player), player, true);
                 }
             }
 
@@ -163,7 +161,7 @@ public class UssdService {
                         return buildResponse(generateMenuResponse(LOCAL_PACKAGES_MENU_ID), player, false);
 
                     case 5: // "1*2*X*X*X"
-                        return buildResponse(handleVote(phoneNumber, inputs), player, true);
+                        return buildResponse(handleVote(phoneNumber, inputs, player), player, true);
                 }
             }
         }
@@ -422,7 +420,7 @@ public class UssdService {
     }
 
     @Transactional
-    private String handleVote(String phoneNumber, String[] inputs) {
+    private String handleVote(String phoneNumber, String[] inputs, String player) {
         try {
             // The second last input represents the contestant selection
             int selectedPartner = Integer.parseInt(inputs[0]);
@@ -480,6 +478,16 @@ public class UssdService {
 
             // Prepare the vote request
             VoteRequestDTO voteRequest = new VoteRequestDTO();
+
+            log.info("Player:-", player);
+
+            if(player.equals("Airtel")) {
+                voteRequest.setSourceChannel("AIRTEL");
+                voteRequest.setPaymentGateway("AIRTEL");
+            } else if (player.equals("mixxByYas")) {
+                voteRequest.setSourceChannel("MIXX");
+                voteRequest.setPaymentGateway("MIXX");
+            }
             voteRequest.setContestantCode(votingCode); // Use the voting code from the Contestant table
             voteRequest.setPhoneNumber(phoneNumber.replace("+", "")); // Clean the phone number
             voteRequest.setChannel("USSD"); // Set the voting channel
@@ -487,7 +495,8 @@ public class UssdService {
             voteRequest.setPartnerCode(partnerSelected);
 
             // Log the details for debugging
-            log.info("votingCode: {}, Processing voting of amount: {}, phoneNumber: {}, partnerCode: {}", votingCode, amount, phoneNumber, partnerSelected);
+            log.info("votingCode: {}, Processing voting of amount: {}, phoneNumber: {}, partnerCode: {},", votingCode, amount, phoneNumber, partnerSelected);
+            log.info("Vote-Source: {}", voteRequest.getSourceChannel());
 
             // Call the external API to submit the vote
             VoteResponseDTO voteResponse = externalApiService.submitVote(voteRequest);
@@ -673,7 +682,7 @@ public class UssdService {
         }
     }
 
-    private String handleNews(String phoneNumber, String[] inputs, String topicType) {
+    private String handleNews(String phoneNumber, String[] inputs, String topicType, String player) {
         try {
             int selectedBundleUnit = Integer.parseInt(inputs[inputs.length - 1]);
             int selectedClub = Integer.parseInt(inputs[inputs.length - 2]);
@@ -732,6 +741,14 @@ public class UssdService {
             }else if (topicType.equals("Team")){
                 requestDTO.setTopicId(menuItemId.toString());
             }
+            if(player.equals("Airtel")) {
+                requestDTO.setSourceChannel("AIRTEL");
+                requestDTO.setPaymentGateway("AIRTEL");
+            } else if (player.equals("mixxByYas")) {
+                requestDTO.setSourceChannel("MIXX");
+                requestDTO.setPaymentGateway("MIXX");
+            }
+
             requestDTO.setPaymentPhone(phoneNumber.replace("+", ""));
             requestDTO.setSubscriptionPhone(phoneNumber.replace("+", ""));
             requestDTO.setAmount(amount);

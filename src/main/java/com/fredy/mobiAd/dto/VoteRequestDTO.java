@@ -6,6 +6,24 @@ public class VoteRequestDTO {
     private String channel;
     private Long amount;
     private String partnerCode;
+    private String sourceChannel;
+    private String paymentGateway;
+
+    public String getSourceChannel() {
+        return sourceChannel;
+    }
+
+    public void setSourceChannel(String sourceChannel) {
+        this.sourceChannel = sourceChannel;
+    }
+
+    public String getPaymentGateway() {
+        return paymentGateway;
+    }
+
+    public void setPaymentGateway(String paymentGateway) {
+        this.paymentGateway = paymentGateway;
+    }
 
     public String getPartnerCode() {
         return partnerCode;
